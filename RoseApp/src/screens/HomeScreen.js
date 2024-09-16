@@ -70,12 +70,12 @@ const HomeScreen = ({ route, navigation }) => {
         </View>
 
         {/* Create Game Button */}
-        <TouchableOpacity style={styles.button} onPress={() => {}}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CreateGame')}>
           <Text style={styles.buttonText}>Create Game</Text>
         </TouchableOpacity>
 
         {/* Join Game Button */}
-        <TouchableOpacity style={styles.button} onPress={() => {}}>
+        <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('JoinGame')}>
           <Text style={styles.buttonText}>Join Game</Text>
         </TouchableOpacity>
       </ScrollView>
