@@ -6,10 +6,8 @@ import SocialLoginButtons from '../components/SocialLoginButtons';
 const LoginScreen = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Login here</Text>
-      <Text style={styles.subheading}>Welcome back you’ve been missed!</Text>
+      <Text style={styles.heading}>Log In</Text>
       <LoginForm />
-      <Text style={styles.forgotPassword}>Forgot your password?</Text>
       <SocialLoginButtons />
     </View>
   );
@@ -20,26 +18,14 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1E1E2C', // Dark background color
   },
   heading: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#1F41BB',
-    marginBottom: 10,
-  },
-  subheading: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#000000',
+    color: '#FFFFFF', // White text
     marginBottom: 20,
-  },
-  forgotPassword: {
-    textAlign: 'right',
-    marginTop: 10,
-    color: '#1F41BB',
-    fontWeight: 'bold',
   },
 });
 
