@@ -12,7 +12,7 @@ const SplashScreen = ({ navigation }) => {
     Animated.sequence([
       Animated.timing(fadeAnimR, {
         toValue: 1,
-        duration: 500,
+        duration: 800,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnimO, {
