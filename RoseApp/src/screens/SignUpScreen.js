@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, StyleSheet, Text, ImageBackground } from 'react-native';
+// Import Firebase
+import { firebase } from '../firebase/firebase';  // Adjust the path as needed
 
 const SignUpScreen = ({ navigation }) => {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [firstName, setFirstName]         = useState('');
+  const [lastName, setLastName]           = useState('');
+  const [email, setEmail]                 = useState('');
+  const [password, setPassword]           = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError]                 = useState('');
 
-  const handleSignUp = () => {
+  // Make handleSignUp an async function to use 'await'
+  const handleSignUp = async () => {
     setError('');
 
     if (!firstName || !lastName || !email || !password || password !== confirmPassword) {
@@ -17,69 +20,80 @@ const SignUpScreen = ({ navigation }) => {
       return;
     }
 
-    // Simulate sign up
-    console.log({ firstName, lastName, email, password });
-
-    navigation.replace('Login');
+    // Attempt to sign up with Firebase Authentication
+    try {
+      await firebase.auth().createUserWithEmailAndPassword(email, password);
+      // Optionally, update the user's profile with first and last name
+      await firebase.auth().currentUser.updateProfile({
+        displayName: `${firstName} ${lastName}`,
+      });
+      // On successful sign-up, navigate to Home screen or Login screen
+      navigation.replace('Home');
+    } catch (error) {
+      // Set error message if sign-up fails
+      setError(error.message);
+    }
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/background.jpeg')}  // Corrected path to the background image
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.container}>
-        <Text style={styles.heading}>Sign Up</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="First Name"
-          placeholderTextColor="#808080"
-          value={firstName}
-          onChangeText={setFirstName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Last Name"
-          placeholderTextColor="#808080"
-          value={lastName}
-          onChangeText={setLastName}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#808080"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#808080"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Confirm Password"
-          placeholderTextColor="#808080"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
-        <View style={styles.buttonContainer}>
-          <Button title="Sign Up" onPress={handleSignUp} color="#FF4B4B" />
-        </View>
-        <Text style={styles.loginText}>
-          Already have an account?{' '}
-          <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
-            Log in
+      <ImageBackground
+          source={require('../../assets/background.jpeg')}  // Corrected path to the background image
+          style={styles.background}
+          resizeMode="cover"
+      >
+        <View style={styles.container}>
+          <Text style={styles.heading}>Sign Up</Text>
+          <TextInput
+              style={styles.input}
+              placeholder="First Name"
+              placeholderTextColor="#808080"
+              value={firstName}
+              onChangeText={setFirstName}
+          />
+          <TextInput
+              style={styles.input}
+              placeholder="Last Name"
+              placeholderTextColor="#808080"
+              value={lastName}
+              onChangeText={setLastName}
+          />
+          <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#808080"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"  // Specify email keyboard
+              autoCapitalize="none"         // Prevent auto-capitalization
+          />
+          <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#808080"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+          />
+          <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              placeholderTextColor="#808080"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+          />
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <View style={styles.buttonContainer}>
+            <Button title="Sign Up" onPress={handleSignUp} color="#FF4B4B" />
+          </View>
+          <Text style={styles.loginText}>
+            Already have an account?{' '}
+            <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
+              Log in
+            </Text>
           </Text>
-        </Text>
-      </View>
-    </ImageBackground>
+        </View>
+      </ImageBackground>
   );
 };
 
