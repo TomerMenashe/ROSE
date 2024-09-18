@@ -1,71 +1,86 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import * as Font from 'expo-font';
-import AppLoading from 'expo-app-loading';
+import * as SplashScreen from 'expo-splash-screen';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Import screens
-import SplashScreen from './src/screens/SplashScreen';
+import SplashScreenComponent from './src/screens/SplashScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import HomeScreen from './src/screens/HomeScreen';
-import JoinGameScreen from './src/screens/JoinGameScreen';   // Added Join Game Screen
-import CreateGameScreen from './src/screens/CreateGameScreen';  // Added Create Game Screen
+import JoinGameScreen from './src/screens/JoinGameScreen';
+import CreateGameScreen from './src/screens/CreateGameScreen';
 
 // Load custom fonts
 const fetchFonts = () => {
   return Font.loadAsync({
-    'Doodle-Font': require('./assets/fonts/DoodleFont.ttf'),  // Path to your custom font
+    'Doodle-Font': require('./assets/fonts/DoodleFont.ttf'),
   });
 };
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const [fontLoaded, setFontLoaded] = useState(false);
+  const [appIsReady, setAppIsReady] = useState(false);
 
-  if (!fontLoaded) {
-    return (
-      <AppLoading
-        startAsync={fetchFonts}
-        onFinish={() => setFontLoaded(true)}
-        onError={(error) => console.log(error)}
-      />
-    );
+  useEffect(() => {
+    async function prepare() {
+      try {
+        await SplashScreen.preventAutoHideAsync();
+        await fetchFonts();
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        setAppIsReady(true);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  const onLayoutRootView = useCallback(async () => {
+    if (appIsReady) {
+      await SplashScreen.hideAsync();
+    }
+  }, [appIsReady]);
+
+  if (!appIsReady) {
+    return null;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer onReady={onLayoutRootView}>
       <Stack.Navigator initialRouteName="Splash">
         <Stack.Screen
           name="Splash"
-          component={SplashScreen}
-          options={{ headerShown: false }}  // Hide header for Splash Screen
+          component={SplashScreenComponent}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Login"
           component={LoginScreen}
-          options={{ headerShown: false }}  // Hide header for Login Screen
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="SignUp"
           component={SignUpScreen}
-          options={{ headerShown: false }}  // Hide header for SignUp Screen
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Home"
           component={HomeScreen}
-          options={{ headerShown: false }}  // Hide header for Home Screen
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="JoinGame"
           component={JoinGameScreen}
-          options={{ headerShown: false }}  // Hide header for Join Game Screen
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="CreateGame"
           component={CreateGameScreen}
-          options={{ headerShown: false }}  // Hide header for Create Game Screen
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

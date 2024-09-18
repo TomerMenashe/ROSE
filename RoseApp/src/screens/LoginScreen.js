@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, ImageBackground, TouchableOpacity } from 'react-native';
+import { View, TextInput, StyleSheet, Text, ImageBackground, Pressable } from 'react-native';
 // Import Firebase
 import { firebase } from '../firebase/firebase';  // Adjust the path as needed
 
@@ -59,9 +59,9 @@ const LoginScreen = ({ navigation }) => {
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+          <Pressable style={styles.loginButton} onPress={handleLogin}>
             <Text style={styles.loginButtonText}>Log in</Text>
-          </TouchableOpacity>
+          </Pressable>
 
           <Text style={styles.signupText}>
             Don't have an account?{' '}
