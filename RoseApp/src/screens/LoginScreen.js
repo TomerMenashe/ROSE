@@ -1,69 +1,76 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, ImageBackground, TouchableOpacity } from 'react-native';
+import { View, TextInput, StyleSheet, Text, ImageBackground, TouchableOpacity } from 'react-native';
+// Import Firebase
+import { firebase } from '../firebase/firebase';  // Adjust the path as needed
 
 const LoginScreen = ({ navigation }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');  // Changed 'username' to 'email'
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = () => {
+  // Make handleLogin an async function to use 'await'
+  const handleLogin = async () => {
     setError('');
 
     // Basic validation
-    if (!username || !password) {
-      setError('Please enter both username and password.');
+    if (!email || !password) {
+      setError('Please enter both email and password.');
       return;
     }
 
-    // Hardcoded login validation for now
-    if (username === 'admin' && password === 'admin') {
-      // Navigate to Home screen and pass the username
-      navigation.replace('Home', { username });
-    } else {
-      setError('Invalid username or password.');
+    // Attempt to sign in with Firebase Authentication
+    try {
+      await firebase.auth().signInWithEmailAndPassword(email, password);
+      // On successful login, navigate to Home screen
+      navigation.replace('Home', { email });
+    } catch (error) {
+      // Set error message if sign-in fails
+      setError(error.message);
     }
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/background.jpeg')}  // Background image
-      style={styles.background}
-      resizeMode="cover"
-    >
-      <View style={styles.container}>
-        <Text style={styles.heading}>Log In</Text>
-        
-        <TextInput
-          style={styles.input}
-          placeholder="Username"
-          placeholderTextColor="#808080"
-          value={username}
-          onChangeText={setUsername}
-        />
+      <ImageBackground
+          source={require('../../assets/background.jpeg')}  // Background image
+          style={styles.background}
+          resizeMode="cover"
+      >
+        <View style={styles.container}>
+          <Text style={styles.heading}>Log In</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#808080"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#808080"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"  // Prevent auto-capitalization
+          />
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#808080"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+          />
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <Text style={styles.loginButtonText}>Log in</Text>
-        </TouchableOpacity>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-        <Text style={styles.signupText}>
-          Don't have an account?{' '}
-          <Text style={styles.signupLink} onPress={() => navigation.navigate('SignUp')}>
-            Sign up
+          <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+            <Text style={styles.loginButtonText}>Log in</Text>
+          </TouchableOpacity>
+
+          <Text style={styles.signupText}>
+            Don't have an account?{' '}
+            <Text style={styles.signupLink} onPress={() => navigation.navigate('SignUp')}>
+              Sign up
+            </Text>
           </Text>
-        </Text>
-      </View>
-    </ImageBackground>
+        </View>
+      </ImageBackground>
   );
 };
 
@@ -127,3 +134,4 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
+//
