@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, ImageBackground } from 'react-native';
+import { View, TextInput, Button, StyleSheet, Text, ImageBackground, Pressable } from 'react-native';
 // Import Firebase
 import { firebase } from '../firebase/firebase';  // Adjust the path as needed
 
@@ -63,8 +63,9 @@ const SignUpScreen = ({ navigation }) => {
               placeholderTextColor="#808080"
               value={email}
               onChangeText={setEmail}
-              keyboardType="email-address"  // Specify email keyboard
-              autoCapitalize="none"         // Prevent auto-capitalization
+              inputMode="email"                // Changed from keyboardType
+              // keyboardType="email-address"   // Optional: Remove if not needed
+              autoCapitalize="none"            // Prevent auto-capitalization
           />
           <TextInput
               style={styles.input}
@@ -84,7 +85,9 @@ const SignUpScreen = ({ navigation }) => {
           />
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
           <View style={styles.buttonContainer}>
-            <Button title="Sign Up" onPress={handleSignUp} color="#FF4B4B" />
+            <Pressable style={styles.button} onPress={handleSignUp}>
+              <Text style={styles.buttonText}>Sign Up</Text>
+            </Pressable>
           </View>
           <Text style={styles.loginText}>
             Already have an account?{' '}
@@ -105,6 +108,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
   heading: {
@@ -128,6 +132,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF4B4B',
     borderRadius: 10,
     overflow: 'hidden',
+    width: '100%',
+    alignItems: 'center',
+  },
+  button: {
+    paddingVertical: 15,
+    width: '100%',
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   loginText: {
     marginTop: 20,

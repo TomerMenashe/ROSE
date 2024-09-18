@@ -37,8 +37,9 @@ const LoginForm = () => {
             placeholderTextColor="#808080"
             value={email}
             onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"  // Prevent auto-capitalization
+            inputMode="email"                // Changed from keyboardType
+            keyboardType="email-address"     // Optional: Remove if not needed
+            autoCapitalize="none"            // Prevent auto-capitalization
         />
         <TextInput
             style={styles.input}

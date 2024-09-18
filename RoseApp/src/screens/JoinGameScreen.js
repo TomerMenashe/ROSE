@@ -21,7 +21,8 @@ const JoinGameScreen = () => {
           placeholder="Game PIN"
           placeholderTextColor="#808080"
           value={gamePin}
-          keyboardType="numeric"
+          keyboardType="numeric"             // Changed from keyboardType
+          inputMode="numeric"                // New inputMode prop
           onChangeText={setGamePin}
         />
 

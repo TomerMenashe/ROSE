@@ -44,8 +44,8 @@ const LoginScreen = ({ navigation }) => {
               placeholderTextColor="#808080"
               value={email}
               onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"  // Prevent auto-capitalization
+              inputMode="email"          // Changed from keyboardType
+              autoCapitalize="none"      // Prevent auto-capitalization
           />
 
           <TextInput
@@ -134,4 +134,3 @@ const styles = StyleSheet.create({
 });
 
 export default LoginScreen;
-//
