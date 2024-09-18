@@ -1,11 +1,14 @@
-export default  {
-    apiKey: "AIzaSyDiItjO6oPQQs_eefladHcOLnGACmMq0yU",
-    authDomain: "rose-date.firebaseapp.com",
-    databaseURL: "https://rose-date-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "rose-date",
-    storageBucket: "rose-date.appspot.com",
-    messagingSenderId: "326707440146",
-    appId: "1:326707440146:web:6a3578a9e0a2c41462c6cb",
-    measurementId: "G-8VC2VJLB04"
+import Constants from 'expo-constants';
+
+const firebaseConfig = {
+    apiKey: Constants.expoConfig.extra.firebaseApiKey,
+    authDomain: Constants.expoConfig.extra.firebaseAuthDomain,
+    databaseURL: Constants.expoConfig.extra.firebaseDatabaseURL,
+    projectId: Constants.expoConfig.extra.firebaseProjectId,
+    storageBucket: Constants.expoConfig.extra.firebaseStorageBucket,
+    messagingSenderId: Constants.expoConfig.extra.firebaseMessagingSenderId,
+    appId: Constants.expoConfig.extra.firebaseAppId,
+    measurementId: Constants.expoConfig.extra.firebaseMeasurementId
 };
-//
+
+export default firebaseConfig;
