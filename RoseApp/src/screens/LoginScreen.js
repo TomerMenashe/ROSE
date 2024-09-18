@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Text, ImageBackground, TouchableOpacity } from 'react-native';
 // Import Firebase
-import { firebase } from '../firebase/firebase';  // Adjust the path as needed
+import { firebase } from '../firebase/firebase';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');  // Changed 'username' to 'email'
