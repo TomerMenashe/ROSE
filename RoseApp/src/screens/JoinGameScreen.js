@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
+import { View, TextInput, StyleSheet, Text, Pressable, ImageBackground, Dimensions } from 'react-native';
 
 const { height, width } = Dimensions.get('window');  // Get screen dimensions
 
@@ -26,9 +26,9 @@ const JoinGameScreen = () => {
         />
 
         {/* Join Game Button */}
-        <TouchableOpacity style={styles.button} onPress={() => {}}>
+        <Pressable style={styles.button} onPress={() => {}}>
           <Text style={styles.buttonText}>Join Game</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </ImageBackground>
   );

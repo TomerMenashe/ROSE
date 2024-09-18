@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { View, Pressable, StyleSheet, Text } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 
 const SocialLoginButtons = () => {
@@ -7,15 +7,15 @@ const SocialLoginButtons = () => {
     <View style={styles.container}>
       <Text style={styles.signInText}>Or Sign in with</Text>
       <View style={styles.buttonsContainer}>
-        <TouchableOpacity style={styles.iconButton}>
+        <Pressable style={styles.iconButton}>
           <FontAwesome name="facebook" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
+        </Pressable>
+        <Pressable style={styles.iconButton}>
           <FontAwesome name="google" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.iconButton}>
+        </Pressable>
+        <Pressable style={styles.iconButton}>
           <FontAwesome name="apple" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

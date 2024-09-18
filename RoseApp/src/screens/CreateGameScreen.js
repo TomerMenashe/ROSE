@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ImageBackground, Dimensions } from 'react-native';
 
 const { height, width } = Dimensions.get('window');  // Get screen dimensions
 
@@ -24,9 +24,9 @@ const CreateGameScreen = () => {
         <Text style={styles.pinText}>Your Game PIN: {pin}</Text>
 
         {/* Regenerate PIN Button */}
-        <TouchableOpacity style={styles.button} onPress={() => setPin(generatePin())}>
+        <Pressable style={styles.button} onPress={() => setPin(generatePin())}>
           <Text style={styles.buttonText}>Generate New PIN</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </ImageBackground>
   );

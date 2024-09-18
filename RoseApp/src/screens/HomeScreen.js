@@ -1,5 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, Animated, Dimensions, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ImageBackground, Pressable, Dimensions, ScrollView } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
+
 // Import Firebase
 import { firebase } from '../firebase/firebase';  // Adjust the path as needed
 
@@ -8,11 +14,43 @@ const { height, width } = Dimensions.get('window');  // Get the screen height an
 const HomeScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);  // State to hold the current user
 
-  const fadeAnim1 = useRef(new Animated.Value(0)).current;
-  const fadeAnim2 = useRef(new Animated.Value(0)).current;
-  const fadeAnim3 = useRef(new Animated.Value(0)).current;
-  const fadeAnim4 = useRef(new Animated.Value(0)).current;
-  const fadeAnim5 = useRef(new Animated.Value(0)).current; // For the rest of the sentence
+  // Initialize shared values for each letter's opacity
+  const fadeAnim1 = useSharedValue(0);
+  const fadeAnim2 = useSharedValue(0);
+  const fadeAnim3 = useSharedValue(0);
+  const fadeAnim4 = useSharedValue(0);
+  const fadeAnim5 = useSharedValue(0); // For the rest of the sentence
+
+  // Define animated styles for each letter
+  const animatedStyle1 = useAnimatedStyle(() => {
+    return {
+      opacity: fadeAnim1.value,
+    };
+  });
+
+  const animatedStyle2 = useAnimatedStyle(() => {
+    return {
+      opacity: fadeAnim2.value,
+    };
+  });
+
+  const animatedStyle3 = useAnimatedStyle(() => {
+    return {
+      opacity: fadeAnim3.value,
+    };
+  });
+
+  const animatedStyle4 = useAnimatedStyle(() => {
+    return {
+      opacity: fadeAnim4.value,
+    };
+  });
+
+  const animatedStyle5 = useAnimatedStyle(() => {
+    return {
+      opacity: fadeAnim5.value,
+    };
+  });
 
   // Subscribe to authentication state changes
   useEffect(() => {
@@ -30,33 +68,16 @@ const HomeScreen = ({ navigation }) => {
   // Animate the letters when the user is set
   useEffect(() => {
     if (user) {
-      Animated.sequence([
-        Animated.timing(fadeAnim1, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim2, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim3, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim4, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim5, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Sequentially animate each letter's opacity
+      fadeAnim1.value = withTiming(1, { duration: 500 }, () => {
+        fadeAnim2.value = withTiming(1, { duration: 500 }, () => {
+          fadeAnim3.value = withTiming(1, { duration: 500 }, () => {
+            fadeAnim4.value = withTiming(1, { duration: 500 }, () => {
+              fadeAnim5.value = withTiming(1, { duration: 500 });
+            });
+          });
+        });
+      });
     }
   }, [user]);
 
@@ -68,47 +89,47 @@ const HomeScreen = ({ navigation }) => {
   const username = user.displayName ? user.displayName : user.email;
 
   return (
-      <ImageBackground
-          source={require('../../assets/createGameBack.jpeg')}  // Background image
-          style={styles.background}
-          resizeMode="cover"
-      >
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <View style={styles.greetingContainer}>
-            {/* Animated Greeting */}
-            <Animated.Text style={[styles.letter, { opacity: fadeAnim1 }]}>
-              {username.charAt(0).toUpperCase()}
-            </Animated.Text>
-            <Animated.Text style={[styles.letter, { opacity: fadeAnim2 }]}>
-              {username.charAt(1).toUpperCase()}
-            </Animated.Text>
-            <Animated.Text style={[styles.letter, { opacity: fadeAnim3 }]}>
-              {username.charAt(2).toUpperCase()}
-            </Animated.Text>
-            <Animated.Text style={[styles.letter, { opacity: fadeAnim4 }]}>
-              {username.slice(3).toUpperCase()}{/* Display the rest of the username */}
-            </Animated.Text>
-            <Animated.Text style={[styles.greeting, { opacity: fadeAnim5 }]}>
-              , Are you ready to get in Love?
-            </Animated.Text>
-          </View>
+    <ImageBackground
+      source={require('../../assets/createGameBack.jpeg')}  // Background image
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.greetingContainer}>
+          {/* Animated Greeting */}
+          <Animated.Text style={[styles.letter, animatedStyle1]}>
+            {username.charAt(0).toUpperCase()}
+          </Animated.Text>
+          <Animated.Text style={[styles.letter, animatedStyle2]}>
+            {username.charAt(1).toUpperCase()}
+          </Animated.Text>
+          <Animated.Text style={[styles.letter, animatedStyle3]}>
+            {username.charAt(2).toUpperCase()}
+          </Animated.Text>
+          <Animated.Text style={[styles.letter, animatedStyle4]}>
+            {username.slice(3).toUpperCase()}{/* Display the rest of the username */}
+          </Animated.Text>
+          <Animated.Text style={[styles.greeting, animatedStyle5]}>
+            , Are you ready to get in Love?
+          </Animated.Text>
+        </View>
 
-          {/* Create Game Button */}
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('CreateGame')}>
-            <Text style={styles.buttonText}>Create Game</Text>
-          </TouchableOpacity>
+        {/* Create Game Button */}
+        <Pressable style={styles.button} onPress={() => navigation.navigate('CreateGame')}>
+          <Text style={styles.buttonText}>Create Game</Text>
+        </Pressable>
 
-          {/* Join Game Button */}
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('JoinGame')}>
-            <Text style={styles.buttonText}>Join Game</Text>
-          </TouchableOpacity>
-        </ScrollView>
+        {/* Join Game Button */}
+        <Pressable style={styles.button} onPress={() => navigation.navigate('JoinGame')}>
+          <Text style={styles.buttonText}>Join Game</Text>
+        </Pressable>
+      </ScrollView>
 
-        {/* Settings Button */}
-        <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
-          <Text style={styles.settingsText}>⚙️</Text>
-        </TouchableOpacity>
-      </ImageBackground>
+      {/* Settings Button */}
+      <Pressable style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
+        <Text style={styles.settingsText}>⚙️</Text>
+      </Pressable>
+    </ImageBackground>
   );
 };
 
