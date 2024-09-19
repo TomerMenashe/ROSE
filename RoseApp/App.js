@@ -11,6 +11,7 @@ import SignUpScreen from './src/screens/SignUpScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import JoinGameScreen from './src/screens/JoinGameScreen';
 import CreateGameScreen from './src/screens/CreateGameScreen';
+import RoomScreen from './src/screens/RoomScreen';
 
 // Load custom fonts
 const fetchFonts = () => {
@@ -82,6 +83,9 @@ export default function App() {
           component={CreateGameScreen}
           options={{ headerShown: false }}
         />
+        <Stack.Screen
+            name="Room"
+            component={RoomScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
