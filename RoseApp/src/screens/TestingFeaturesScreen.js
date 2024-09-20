@@ -4,10 +4,10 @@ import { firebase } from "../firebase/firebase";
 import { getFunctions, httpsCallable } from 'firebase/functions';  // Import Firebase functions
 
 const TestingFeaturesScreen = () => {
-    const [testResponse, setTestResponse] = useState('');  // State to hold the test response
 
+    const [testResponse, setTestResponse] = useState('');  // State to hold the test response
     // Initialize Firebase Functions inside the component
-    const functions = getFunctions(firebase.app(), 'us-central1');  // Replace 'us-central1' with your region
+    const functions = getFunctions(firebase.app(), 'us-central1');
 
     // Function to call the testGenerateResponse Firebase function
     const callTestGenerateResponse = async () => {
@@ -23,12 +23,46 @@ const TestingFeaturesScreen = () => {
         }
     };
 
+    const callTestItemInImage = async (item, imageURL) => {
+        try {
+            // Download the image and convert to Base64
+            const response = await fetch(imageURL);
+            const blob = await response.blob();
+
+            // Convert blob to Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64Image = reader.result.split(',')[1]; // Remove the prefix 'data:image/jpeg;base64,'
+
+                const isItemInImage = httpsCallable(functions, 'isItemInImage');
+                const result = await isItemInImage({ currentItem: item, image: base64Image });
+                const { isPresent } = result.data;
+
+                setTestResponse(isPresent ? 'Yes' : 'No');
+                Alert.alert('Test Response', isPresent ? 'Yes' : 'No');
+            };
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Error', 'Failed to get response from the server.');
+        }
+    };
+
     return (
         <View style={styles.container}>
             <Text style={styles.header}>Here we test features</Text>
 
             <Pressable style={styles.testButton} onPress={callTestGenerateResponse}>
                 <Text style={styles.buttonText}>Test Generate Response</Text>
+            </Pressable>
+
+            <Pressable
+                style={styles.testButton}
+                onPress={() => callTestItemInImage("Tennis Ball",
+                    "https://firebasestorage.googleapis.com/v0/b/rose-date.appspot.com/" +
+                    "o/ImagesForTesting%2FScrewdriver.jpg?alt=media&token=06f64d98-49aa-4e8c-9d13-4321a93296be"
+                )}>
+                <Text style={styles.buttonText}>Test item in image</Text>
             </Pressable>
 
             {/* Display Test Response */}
@@ -40,6 +74,8 @@ const TestingFeaturesScreen = () => {
         </View>
     );
 };
+
+
 
 
 const styles = StyleSheet.create({
@@ -83,3 +119,4 @@ const styles = StyleSheet.create({
 });
 
 export default TestingFeaturesScreen;
+
