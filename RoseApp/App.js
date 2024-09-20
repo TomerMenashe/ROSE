@@ -15,6 +15,7 @@ import JoinGameScreen from './src/screens/JoinGameScreen';
 import CreateGameScreen from './src/screens/CreateGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
 import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';  // Import PhotoEscape Navigator
+import TestingFeaturesScreen from './src/screens/TestingFeaturesScreen';
 
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
@@ -93,6 +94,11 @@ export default function App() {
           component={PhotoEscapeNavigator}  // Include the PhotoEscape navigator
           options={{ headerShown: false }}
         />
+
+        <MainStack.Screen
+            name="TestingFeatures"
+            component={TestingFeaturesScreen}
+            options={{ title: 'Testing Features' }} />
       </MainStack.Navigator>
     </NavigationContainer>
   );

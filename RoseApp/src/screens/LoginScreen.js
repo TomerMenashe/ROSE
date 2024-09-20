@@ -41,7 +41,10 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-
+  // Function to navigate to TestingFeaturesScreen
+  const navigateToTestingFeatures = () => {
+    navigation.navigate('TestingFeatures');
+  };
 
   return (
       <ImageBackground
@@ -83,6 +86,14 @@ const LoginScreen = ({ navigation }) => {
               Sign up
             </Text>
           </Text>
+
+          {/* A button to testing features page */}
+          <Pressable style={styles.testButton} onPress={navigateToTestingFeatures}>
+            <Text style={styles.loginButtonText}>Go to Testing Features</Text>
+          </Pressable>
+
+
+
         </View>
       </ImageBackground>
   );
