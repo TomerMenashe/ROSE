@@ -1,3 +1,5 @@
+// App.js
+
 import React, { useState, useEffect, useCallback } from 'react';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -12,16 +14,9 @@ import HomeScreen from './src/screens/HomeScreen';
 import JoinGameScreen from './src/screens/JoinGameScreen';
 import CreateGameScreen from './src/screens/CreateGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
-import GameStart from './src/screens/GameStartPage'; // Import the GameStart screen
+import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';  // Import PhotoEscape Navigator
 
-// Load custom fonts
-const fetchFonts = () => {
-  return Font.loadAsync({
-    'Doodle-Font': require('./assets/fonts/DoodleFont.ttf'),
-  });
-};
-
-const Stack = createNativeStackNavigator();
+const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
 export default function App() {
   const [appIsReady, setAppIsReady] = useState(false);
@@ -30,7 +25,9 @@ export default function App() {
     async function prepare() {
       try {
         await SplashScreen.preventAutoHideAsync();
-        await fetchFonts();
+        await Font.loadAsync({
+          'Doodle-Font': require('./assets/fonts/DoodleFont.ttf'),
+        });
       } catch (e) {
         console.warn(e);
       } finally {
@@ -53,47 +50,50 @@ export default function App() {
 
   return (
     <NavigationContainer onReady={onLayoutRootView}>
-      <Stack.Navigator initialRouteName="Splash">
-        <Stack.Screen
+      <MainStack.Navigator initialRouteName="Splash">
+        <MainStack.Screen
           name="Splash"
           component={SplashScreenComponent}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        <MainStack.Screen
           name="Login"
           component={LoginScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        <MainStack.Screen
           name="SignUp"
           component={SignUpScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        <MainStack.Screen
           name="Home"
           component={HomeScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        <MainStack.Screen
           name="JoinGame"
           component={JoinGameScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        <MainStack.Screen
           name="CreateGame"
           component={CreateGameScreen}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        <MainStack.Screen
           name="Room"
           component={RoomScreen}
+          options={{ headerShown: false }}
         />
-        <Stack.Screen
-          name="GameStart"
-          component={GameStart}  // Added the GameStart screen here
-          options={{ headerShown: false }}  // Optionally hide the header
+
+        {/* Add PhotoEscape Navigator */}
+        <MainStack.Screen
+          name="PhotoEscape"
+          component={PhotoEscapeNavigator}  // Include the PhotoEscape navigator
+          options={{ headerShown: false }}
         />
-      </Stack.Navigator>
+      </MainStack.Navigator>
     </NavigationContainer>
   );
 }

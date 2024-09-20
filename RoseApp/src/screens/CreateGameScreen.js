@@ -1,66 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ImageBackground, Dimensions } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
-import { useNavigation } from '@react-navigation/native';  // Import navigation hook
 
-const { height, width } = Dimensions.get('window');  // Get screen dimensions
+const { height, width } = Dimensions.get('window');
 
 const CreateGameScreen = () => {
   const [pin, setPin] = useState(generatePin());
-  const navigation = useNavigation();      // Hook to navigate between screens
-  const currentUser = firebase.auth().currentUser;  // Get the current authenticated user
+  const navigation = useNavigation();
+  const currentUser = firebase.auth().currentUser;
 
-  // Function to generate a 4-digit PIN
+  // Function to generate a random 4-digit PIN
   function generatePin() {
-    return Math.floor(1000 + Math.random() * 9000).toString();  // Generates a random 4-digit pin
+    return Math.floor(1000 + Math.random() * 9000).toString();
   }
 
-  useEffect(() => {
+  const handleCreateGame = () => {
     const roomRef = firebase.database().ref(`room/${pin}`);
+    console.log("Generated PIN in CreateGameScreen:", pin);  // LOG PIN GENERATION
 
-    // Set up the room in Firebase when the pin changes
     roomRef.set({
       createdAt: firebase.database.ServerValue.TIMESTAMP,
       participants: {
-        [currentUser.uid]: { name: currentUser.displayName }  // Add the creator's name
+        [currentUser.uid]: { name: currentUser.displayName }
       }
     }).then(() => {
-      console.log(`Room ${pin} created successfully.`);
+      console.log("Room created successfully in Firebase with PIN:", pin);  // LOG SUCCESSFUL ROOM CREATION
+      // Navigate to the RoomScreen and pass the generated pin
+      navigation.navigate('Room', { pin });
+      console.log("Navigating to RoomScreen with PIN:", pin);  // LOG NAVIGATION TO ROOMSCREEN
     }).catch((error) => {
       console.error("Error creating room:", error);
     });
-
-    // Listen for changes in the participants list
-    roomRef.child('participants').on('value', (snapshot) => {
-      const participantsData = snapshot.val();
-      if (participantsData && Object.keys(participantsData).length > 0) {
-        // If there's at least one participant, navigate to the room
-        navigation.navigate('Room', { pin });
-      }
-    });
-
-    // Cleanup the listener
-    return () => roomRef.child('participants').off();
-  }, [pin]);
+  };
 
   return (
-      <ImageBackground
-          source={require('../../assets/joinGame.jpeg')}  // Create game background image
-          style={styles.background}
-          resizeMode="cover"
-      >
-        <View style={styles.container}>
-          <Text style={styles.title}>Rose</Text>
+    <ImageBackground
+      source={require('../../assets/joinGame.jpeg')}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Create Game</Text>
+        <Text style={styles.pinText}>Generated PIN: {pin}</Text>
 
-          {/* Display the generated PIN */}
-          <Text style={styles.pinText}>Your Game PIN: {pin}</Text>
-
-          {/* Regenerate PIN Button */}
-          <Pressable style={styles.button} onPress={() => setPin(generatePin())}>
-            <Text style={styles.buttonText}>Generate New PIN</Text>
-          </Pressable>
-        </View>
-      </ImageBackground>
+        <Pressable style={styles.button} onPress={handleCreateGame}>
+          <Text style={styles.buttonText}>Create Game</Text>
+        </Pressable>
+      </View>
+    </ImageBackground>
   );
 };
 
@@ -77,26 +65,24 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 100,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: 40,
   },
   pinText: {
-    fontSize: 32,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 30,
+    marginBottom: 20,
   },
   button: {
     backgroundColor: '#FF4B4B',
-    paddingVertical: 20,  // Same padding as HomeScreen button
-    borderRadius: 20,     // Same borderRadius as HomeScreen button
-    width: width * 0.8,   // 80% of the screen width
-    height: height * 0.08, // 8% of the screen height
+    paddingVertical: 15,
+    borderRadius: 10,
+    width: width * 0.8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,     // Additional margin for spacing
   },
   buttonText: {
     color: '#FFFFFF',
