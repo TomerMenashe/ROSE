@@ -1,118 +1,123 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ImageBackground, Modal, StyleSheet, Dimensions } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
-import { firebase } from '../../firebase/firebase';  // Ensure this path is correct and Firebase is properly initialized
+import { View, Text, Pressable, ImageBackground, StyleSheet, Dimensions } from 'react-native';
+import { useNavigation, useRoute } from '@react-navigation/native';  // Import navigation and route hooks
+import { firebase } from '../../firebase/firebase';  // Ensure your Firebase is initialized
 
-// Get device width and height for responsiveness
-const { width, height } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');  // Get screen dimensions
 
 const PhotoEscapeReadyScreen = () => {
-  const [modalVisible, setModalVisible] = useState(false);  // State to manage modal visibility
-  const [isReady, setIsReady] = useState(false);  // State to manage player's readiness
-  const [otherPlayerReady, setOtherPlayerReady] = useState(false);  // Check if the other player is ready
-  const route = useRoute();
-  const navigation = useNavigation();
-  const { pin } = route.params || {};  // Safely access pin and avoid undefined issues
+  const [isReady, setIsReady] = useState(false);  // Track whether this player is ready
+  const [participants, setParticipants] = useState({});  // Store participants' data
+  const [allReady, setAllReady] = useState(false);  // Track if all players are ready
+  const [navigated, setNavigated] = useState(false);  // Ensure we navigate only once
 
-  // Debugging to check if the PIN is correctly received
-  console.log('Game PIN:', pin);
+  const navigation = useNavigation();  // Hook to navigate between screens
+  const route = useRoute();  // Get the current route params (for the game pin)
+  const { pin } = route.params || {};  // Safely get the game pin from route parameters
 
-  const currentUser = firebase.auth().currentUser;  // Get current authenticated user
+  const currentUser = firebase.auth().currentUser;
 
   if (!currentUser) {
-    console.error('No user is authenticated.');
+    console.error('No authenticated user.');
     return null;
   }
 
-  // Mark the current player as ready in Firebase
-  const handleReadyPress = () => {
+  console.log(`Current User UID: ${currentUser.uid}`);  // Log the current user's UID
+
+  // Function to handle when the player presses "Ready"
+  const handleStartGame = () => {
     const roomRef = firebase.database().ref(`room/${pin}/participants/${currentUser.uid}`);
 
-    roomRef.update({ ready: true }).then(() => {
+    // Check if the user is already in the database
+    roomRef.once('value', (snapshot) => {
+      if (!snapshot.exists()) {
+        // Safeguard: Check if a player with the same name already exists
+        const participantsRef = firebase.database().ref(`room/${pin}/participants`);
+        participantsRef.once('value', (participantsSnapshot) => {
+          const participantsData = participantsSnapshot.val();
+          const existingPlayer = Object.values(participantsData).find(participant => participant.name === (currentUser.displayName || `Player ${currentUser.uid}`));
+          
+          if (existingPlayer) {
+            console.log('Player with the same name already exists. Updating existing entry...');
+            const existingPlayerKey = Object.keys(participantsData).find(key => participantsData[key].name === existingPlayer.name);
+            firebase.database().ref(`room/${pin}/participants/${existingPlayerKey}`).update({
+              ready: true
+            });
+          } else {
+            // If no existing player with the same name, add the user
+            roomRef.set({
+              name: currentUser.displayName || `Player ${currentUser.uid}`,  // Ensure name is set
+              ready: true  // Set the ready status to true
+            });
+          }
+        });
+      } else {
+        // If user already exists, just update the ready state
+        roomRef.update({
+          ready: true  // Update the ready status to true
+        });
+      }
+    }).then(() => {
       setIsReady(true);  // Mark this player as ready in the app's state
+      console.log(`Player ${currentUser.uid} is now ready.`);
     }).catch((error) => {
       console.error('Error updating Firebase:', error);
     });
   };
 
+  // Listen for changes in the participants' data in Firebase
   useEffect(() => {
-    // Listen for other players' readiness
     const roomRef = firebase.database().ref(`room/${pin}/participants`);
 
+    // Set up a listener to check the readiness of all participants
     const participantListener = roomRef.on('value', (snapshot) => {
       if (snapshot.exists()) {
-        const participants = snapshot.val();
-        const otherPlayers = Object.values(participants).filter(p => p.name !== currentUser.displayName);
+        const participantsData = snapshot.val();
+        console.log('Participants Data from Firebase:', participantsData);
+        setParticipants(participantsData);
 
-        if (otherPlayers.length > 0 && otherPlayers[0].ready) {
-          setOtherPlayerReady(true);  // Other player is ready
-        }
+        // Check if all participants are ready
+        const allParticipantsReady = Object.values(participantsData).every(participant => participant.ready === true);
+        setAllReady(allParticipantsReady);
 
-        // Navigate to the game when both players are ready
-        if (isReady && otherPlayerReady) {
-          navigation.navigate('PhotoEscapeGame', { pin });
+        // Navigate to the game screen if all participants are ready
+        if (allParticipantsReady && !navigated) {
+          console.log('All players are ready. Navigating to the game screen.');
+          setNavigated(true);  // Ensure we only navigate once
+          navigation.navigate('PhotoEscapeGame', { pin });  // Pass the pin when navigating
+        } else if (!allParticipantsReady) {
+          console.log('Not all players are ready.');
         }
-      } else {
-        console.error('Snapshot does not exist.');
       }
     });
 
-    return () => roomRef.off('value', participantListener);  // Clean up the listener
-  }, [isReady, otherPlayerReady, pin, navigation, currentUser.displayName]);
+    // Cleanup listener on component unmount
+    return () => roomRef.off('value', participantListener);
+  }, [pin, navigation, navigated]);
 
   return (
     <ImageBackground
-      source={require('./assets/background.jpeg')}  // Ensure the path to the background image is correct
+      source={require('./assets/background.jpeg')}  // PhotoEscape ready background image
       style={styles.background}
       resizeMode="cover"
     >
       <View style={styles.container}>
-        <Text style={styles.title}>Photo Escape</Text>
-
-        {/* Display the game PIN */}
-        {pin ? (
-          <Text style={styles.pinText}>Game PIN: {pin}</Text>
-        ) : (
-          <Text style={styles.errorText}>Error: No PIN provided</Text>  // Debugging error text if no pin
-        )}
+        <Text style={styles.title}>PhotoEscape</Text>
 
         {/* Ready Button */}
-        <TouchableOpacity style={styles.readyButton} onPress={handleReadyPress} disabled={isReady}>
-          <Text style={styles.readyButtonText}>
-            {isReady ? 'Waiting for other player...' : 'READY'}
-          </Text>
-        </TouchableOpacity>
+        <Pressable style={styles.button} onPress={handleStartGame}>
+          <Text style={styles.buttonText}>{isReady ? 'Waiting for others...' : 'Ready'}</Text>
+        </Pressable>
 
-        {/* Question Mark Button */}
-        <TouchableOpacity style={styles.questionMark} onPress={() => setModalVisible(true)}>
-          <Text style={styles.questionMarkText}>?</Text>
-        </TouchableOpacity>
-
-        {/* Modal for explanation */}
-        <Modal
-          animationType="fade"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalText}>How to Play: In Photo Escape, solve puzzles quickly to escape!</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
+        {/* Display a message when waiting for other players */}
+        {!allReady && isReady && (
+          <Text style={styles.waitingText}>Waiting for other players to be ready...</Text>
+        )}
       </View>
     </ImageBackground>
   );
 };
 
-// CSS-like styles using React Native's StyleSheet
 const styles = StyleSheet.create({
   background: {
     flex: 1,
@@ -123,85 +128,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   title: {
-    fontSize: 48,
+    fontSize: 40,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    marginBottom: 30,
-    textShadowColor: 'rgba(0, 0, 0, 0.75)',
-    textShadowOffset: { width: -1, height: 1 },
-    textShadowRadius: 10,
+    marginBottom: 40,  // Adjust margin
   },
-  pinText: {
-    fontSize: 24,
-    color: '#FFFFFF',
-    marginBottom: 20,
-  },
-  errorText: {
-    fontSize: 24,
-    color: 'red',
-    marginBottom: 20,
-  },
-  readyButton: {
-    backgroundColor: '#FF4B4B',  // Red background color
-    borderRadius: 30,
-    paddingVertical: 15,
-    paddingHorizontal: 60,
-    marginBottom: 20,
-  },
-  readyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  questionMark: {
-    position: 'absolute',
-    bottom: 20,
-    alignSelf: 'center',
-    backgroundColor: 'transparent',
-  },
-  questionMarkText: {
-    color: '#FFFFFF',
-    fontSize: 30,
-    fontWeight: 'bold',
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',  // Transparent background
-  },
-  modalContent: {
-    backgroundColor: '#FFFFFF',
+  button: {
+    backgroundColor: '#FF4B4B',  // Red color for the Ready button
+    paddingVertical: 20,
     borderRadius: 20,
-    padding: 20,
+    width: width * 0.8,
+    height: height * 0.08,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    justifyContent: 'center',
+    marginBottom: 20,
   },
-  modalText: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  closeButton: {
-    backgroundColor: '#FF4B4B',
-    borderRadius: 10,
-    padding: 10,
-    width: 100,
-    alignItems: 'center',
-  },
-  closeButtonText: {
+  buttonText: {
     color: '#FFFFFF',
+    fontSize: 18,
     fontWeight: 'bold',
+  },
+  waitingText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    marginTop: 20,
   },
 });
 
