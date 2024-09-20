@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { View, TextInput, Button, StyleSheet, Text, ImageBackground, Pressable } from 'react-native';
+import { View, TextInput, Button, StyleSheet, Text, ImageBackground, Pressable, Dimensions } from 'react-native';
 // Import Firebase
 import { firebase } from '../firebase/firebase';  // Adjust the path as needed
 
 const SignUpScreen = ({ navigation }) => {
-  const [firstName, setFirstName]         = useState('');
-  const [lastName, setLastName]           = useState('');
-  const [email, setEmail]                 = useState('');
-  const [password, setPassword]           = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError]                 = useState('');
+  const [error, setError] = useState('');
+
+  const { width } = Dimensions.get('window');  // Get device width for responsive sizing
 
   // Make handleSignUp an async function to use 'await'
   const handleSignUp = async () => {
@@ -36,67 +38,66 @@ const SignUpScreen = ({ navigation }) => {
   };
 
   return (
-      <ImageBackground
-          source={require('../../assets/background.jpeg')}  // Corrected path to the background image
-          style={styles.background}
-          resizeMode="cover"
-      >
-        <View style={styles.container}>
-          <Text style={styles.heading}>Sign Up</Text>
-          <TextInput
-              style={styles.input}
-              placeholder="First Name"
-              placeholderTextColor="#808080"
-              value={firstName}
-              onChangeText={setFirstName}
-          />
-          <TextInput
-              style={styles.input}
-              placeholder="Last Name"
-              placeholderTextColor="#808080"
-              value={lastName}
-              onChangeText={setLastName}
-          />
-          <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#808080"
-              value={email}
-              onChangeText={setEmail}
-              inputMode="email"                // Changed from keyboardType
-              // keyboardType="email-address"   // Optional: Remove if not needed
-              autoCapitalize="none"            // Prevent auto-capitalization
-          />
-          <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor="#808080"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-          />
-          <TextInput
-              style={styles.input}
-              placeholder="Confirm Password"
-              placeholderTextColor="#808080"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-          />
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
-          <View style={styles.buttonContainer}>
-            <Pressable style={styles.button} onPress={handleSignUp}>
-              <Text style={styles.buttonText}>Sign Up</Text>
-            </Pressable>
-          </View>
-          <Text style={styles.loginText}>
-            Already have an account?{' '}
-            <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
-              Log in
-            </Text>
-          </Text>
+    <ImageBackground
+      source={require('../../assets/background.jpeg')}  // Corrected path to the background image
+      style={styles.background}
+      resizeMode="cover"
+    >
+      <View style={styles.container}>
+        <Text style={styles.heading}>Sign Up</Text>
+        <TextInput
+          style={[styles.input, { width: width * 0.85 }]}  // Make input field responsive to screen width
+          placeholder="First Name"
+          placeholderTextColor="#808080"
+          value={firstName}
+          onChangeText={setFirstName}
+        />
+        <TextInput
+          style={[styles.input, { width: width * 0.85 }]}  // Make input field responsive to screen width
+          placeholder="Last Name"
+          placeholderTextColor="#808080"
+          value={lastName}
+          onChangeText={setLastName}
+        />
+        <TextInput
+          style={[styles.input, { width: width * 0.85 }]}  // Make input field responsive to screen width
+          placeholder="Email"
+          placeholderTextColor="#808080"
+          value={email}
+          onChangeText={setEmail}
+          inputMode="email"                // Changed from keyboardType
+          autoCapitalize="none"            // Prevent auto-capitalization
+        />
+        <TextInput
+          style={[styles.input, { width: width * 0.85 }]}  // Make input field responsive to screen width
+          placeholder="Password"
+          placeholderTextColor="#808080"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+        />
+        <TextInput
+          style={[styles.input, { width: width * 0.85 }]}  // Make input field responsive to screen width
+          placeholder="Confirm Password"
+          placeholderTextColor="#808080"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+        />
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        <View style={styles.buttonContainer}>
+          <Pressable style={[styles.button, { width: width * 0.85 }]} onPress={handleSignUp}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </Pressable>
         </View>
-      </ImageBackground>
+        <Text style={styles.loginText}>
+          Already have an account?{' '}
+          <Text style={styles.link} onPress={() => navigation.navigate('Login')}>
+            Log in
+          </Text>
+        </Text>
+      </View>
+    </ImageBackground>
   );
 };
 
@@ -132,12 +133,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF4B4B',
     borderRadius: 10,
     overflow: 'hidden',
-    width: '100%',
     alignItems: 'center',
+    marginTop: 10,
   },
   button: {
     paddingVertical: 15,
-    width: '100%',
     alignItems: 'center',
   },
   buttonText: {
