@@ -12,6 +12,7 @@ import HomeScreen from './src/screens/HomeScreen';
 import JoinGameScreen from './src/screens/JoinGameScreen';
 import CreateGameScreen from './src/screens/CreateGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
+import GameStart from './src/screens/GameStartPage'; // Import the GameStart screen
 
 // Load custom fonts
 const fetchFonts = () => {
@@ -84,8 +85,14 @@ export default function App() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-            name="Room"
-            component={RoomScreen} />
+          name="Room"
+          component={RoomScreen}
+        />
+        <Stack.Screen
+          name="GameStart"
+          component={GameStart}  // Added the GameStart screen here
+          options={{ headerShown: false }}  // Optionally hide the header
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
