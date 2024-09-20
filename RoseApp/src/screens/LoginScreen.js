@@ -1,14 +1,26 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, ImageBackground, Pressable } from 'react-native';
+import { View, TextInput, StyleSheet, Text, ImageBackground, Pressable, Alert, Dimensions } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
+
 // Import Firebase
 import { firebase } from '../firebase/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';  // Import necessary Firebase functions
+
+const { height, width } = Dimensions.get('window');  // Get the screen height and width
 
 const LoginScreen = ({ navigation }) => {
-  const [email, setEmail] = useState('');  // Changed 'username' to 'email'
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState('');  // State for email input
+  const [password, setPassword] = useState('');  // State for password input
+  const [error, setError] = useState('');  // State for error messages
 
-  // Make handleLogin an async function to use 'await'
+  // Initialize Firebase Functions
+  const functions = getFunctions(firebase.app(), 'us-central1');  // Replace 'YOUR_REGION' with your Firebase Functions region, e.g., 'us-central1'
+
+  // Function to handle user login
   const handleLogin = async () => {
     setError('');
 
@@ -28,6 +40,8 @@ const LoginScreen = ({ navigation }) => {
       setError(error.message);
     }
   };
+
+
 
   return (
       <ImageBackground
@@ -118,6 +132,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  testButton: {
+    width: '100%',
+    backgroundColor: '#4B94FF',
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   loginButtonText: {
     color: '#FFFFFF',
     fontSize: 18,
@@ -126,10 +148,23 @@ const styles = StyleSheet.create({
   signupText: {
     color: '#FFFFFF',
     fontSize: 16,
+    marginTop: 10,
   },
   signupLink: {
     color: '#FF4B4B',
     fontWeight: 'bold',
+  },
+  responseContainer: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 10,
+    width: '100%',
+  },
+  responseText: {
+    fontSize: 16,
+    color: '#000000',
+    textAlign: 'center',
   },
 });
 
