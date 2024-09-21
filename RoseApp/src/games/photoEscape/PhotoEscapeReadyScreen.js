@@ -80,11 +80,11 @@ const PhotoEscapeReadyScreen = () => {
         const allParticipantsReady = Object.values(participantsData).every(participant => participant.ready === true);
         setAllReady(allParticipantsReady);
 
-        // Navigate to the game screen if all participants are ready
+        // Navigate to the limerick screen if all participants are ready
         if (allParticipantsReady && !navigated) {
-          console.log('All players are ready. Navigating to the game screen.');
+          console.log('All players are ready. Navigating to the limerick screen.');
           setNavigated(true);  // Ensure we only navigate once
-          navigation.navigate('PhotoEscapeGame', { pin });  // Pass the pin when navigating
+          navigation.navigate('PhotoEscapeLimerick', { pin });  // Pass the pin when navigating
         } else if (!allParticipantsReady) {
           console.log('Not all players are ready.');
         }
