@@ -6,7 +6,7 @@ import { firebase } from '../../firebase/firebase';
 const TestPhotoCapture = () => {
     const [permission, requestPermission] = useCameraPermissions();
     const [photo, setPhoto] = useState(null);
-    const [cameraType, setCameraType] = useState('back');
+    const [cameraType, setCameraType] = useState('front');
     const cameraRef = useRef(null);
     const storage = firebase.storage();
     const photoRef = firebase.database().ref('photo');
