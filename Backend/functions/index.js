@@ -1,11 +1,10 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const axios = require('axios');
+const { getStorage } = require('firebase-admin/storage');
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
-
-// Replace this with your actual API key stored in Firebase environment config
-const API_KEY = functions.config().openai.key;
 
 /**
  * Encodes an image buffer to a Base64 string.
@@ -19,19 +18,11 @@ function encodeImage(imageBuffer) {
 
 /**
  * Generates a response from the OpenAI GPT-4 model.
- *
- * @param {string} [model="gpt-4o"] - The model to use.
- * @param {number} [temperature=0.7] - The temperature for response creativity.
- * @param {string} [typeOfResponse="text"] - The type of response.
- * @param {string|null} [query=null] - The query to be processed by the model.
- * @param {Buffer|null} [imgBuffer=null] - The buffer of an image to include in the query.
- * @param {number} [maxTokens=100] - The maximum number of tokens in the response.
- * @returns {Promise<string>} - The response from the model.
  */
 async function generateResponse(model = "gpt-4o", temperature = 0.7, typeOfResponse = "text", query = null, imgBuffer = null, maxTokens = 100) {
     const headers = {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${API_KEY}`
+        "Authorization": `Bearer ${functions.config().openai.key}`
     };
 
     const content = [
@@ -70,12 +61,109 @@ async function generateResponse(model = "gpt-4o", temperature = 0.7, typeOfRespo
 }
 
 /**
- * Callable function to get a random item.
+ * Callable function to perform a face swap using images stored in Firebase Storage.
  *
- * @param {object} _data - The data passed from the client (unused).
- * @param {object} _context - The context of the callable function (unused).
- * @returns {Promise<object>} - An object containing the random item.
+ * @returns {Promise<object>} - An object containing the URLs of the swapped faces.
  */
+// eslint-disable-next-line no-unused-vars
+exports.swapFaces = functions.https.onCall(async (_data, _context) => {
+    try {
+        const storage = getStorage();
+        const database = admin.database();
+
+        // URLs for the source face images
+        const faceImageUrl1 = 'https://firebasestorage.googleapis.com/v0/b/rose-date.appspot.com/o/ImagesForTesting%2Fdudu2.webp?alt=media&token=00d12660-9578-4c1b-a376-343c1bf4f446';
+        const faceImageUrl2 = 'https://firebasestorage.googleapis.com/v0/b/rose-date.appspot.com/o/ImagesForTesting%2FDaniel_headShot.webp?alt=media&token=cddd1526-fadf-4edb-84c3-fddae25f954d';
+
+        // Fetch the images from the URLs
+        const sourceImage1Response = await axios.get(faceImageUrl1, { responseType: 'arraybuffer' });
+        const sourceImage2Response = await axios.get(faceImageUrl2, { responseType: 'arraybuffer' });
+
+        // Convert images to base64
+        const sourceImage1 = encodeImage(sourceImage1Response.data);
+        const sourceImage2 = encodeImage(sourceImage2Response.data);
+
+        // Get list of target images from 'FaceSwapTargets' folder in Firebase Storage
+        const bucket = storage.bucket();
+        const [files] = await bucket.getFiles({ prefix: 'FaceSwapTargets/' });
+
+        if (files.length < 3) {
+            throw new Error('Not enough target images available.');
+        }
+
+        // Select three random images from the FaceSwapTargets folder
+        const selectedImages = files.sort(() => 0.5 - Math.random()).slice(0, 3);
+
+        const results = [];
+
+        // Process face swaps for each selected image
+        for (let i = 0; i < selectedImages.length; i++) {
+            const targetImageBuffer = await selectedImages[i].download();
+            const targetImage = encodeImage(targetImageBuffer[0]);
+
+            // Prepare payloads for the API call
+            const data1 = {
+                source_img: sourceImage1,
+                target_img: targetImage,
+                input_faces_index: 0,
+                source_faces_index: 0,
+                face_restore: "codeformer-v0.1.0.pth",
+                base64: true
+            };
+            const data2 = {
+                source_img: sourceImage2,
+                target_img: targetImage,
+                input_faces_index: 0,
+                source_faces_index: 0,
+                face_restore: "codeformer-v0.1.0.pth",
+                base64: true
+            };
+
+            // API calls
+            const [response1, response2] = await Promise.all([
+                axios.post('https://api.segmind.com/v1/faceswap-v2', data1, { headers: { 'x-api-key': 'SG_fc45d3379f2df142' } }),
+                axios.post('https://api.segmind.com/v1/faceswap-v2', data2, { headers: { 'x-api-key': 'SG_fc45d3379f2df142' } })
+            ]);
+
+            if (response1.data.image && response2.data.image) {
+                const buffer1 = Buffer.from(response1.data.image, 'base64');
+                const buffer2 = Buffer.from(response2.data.image, 'base64');
+                const timestamp = Date.now();
+
+                // Upload swapped images to Firebase Storage
+                const file1 = bucket.file(`faceswaps/${timestamp}_swap${i}_1.jpg`);
+                const file2 = bucket.file(`faceswaps/${timestamp}_swap${i}_2.jpg`);
+
+                await file1.save(buffer1, { contentType: 'image/jpeg' });
+                await file2.save(buffer2, { contentType: 'image/jpeg' });
+
+                const [downloadURL1, downloadURL2] = await Promise.all([
+                    file1.getSignedUrl({ action: 'read', expires: '03-01-2500' }),
+                    file2.getSignedUrl({ action: 'read', expires: '03-01-2500' })
+                ]);
+
+                // Store results in the database
+                const faceSwapRef = database.ref('faceswaps').push();
+                await faceSwapRef.set({
+                    url1: downloadURL1,
+                    url2: downloadURL2,
+                    timestamp
+                });
+
+                results.push({ url1: downloadURL1, url2: downloadURL2 });
+            } else {
+                throw new Error('FaceSwap API did not return both images.');
+            }
+        }
+
+        return { results };
+    } catch (error) {
+        console.error('Error:', error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
+
+// Existing functions with ESLint rule fixes
 // eslint-disable-next-line no-unused-vars
 exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
     try {
@@ -98,15 +186,6 @@ exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
     }
 });
 
-/**
- * Callable function to check if an item is in the image.
- *
- * @param {object} data - The data passed from the client.
- * @param {string} data.currentItem - The item to check for.
- * @param {string} data.image - The Base64 encoded image string.
- * @param {object} _context - The context of the callable function (unused).
- * @returns {Promise<object>} - An object indicating whether the item is present.
- */
 // eslint-disable-next-line no-unused-vars
 exports.isItemInImage = functions.https.onCall(async (data, _context) => {
     try {
@@ -136,17 +215,10 @@ exports.isItemInImage = functions.https.onCall(async (data, _context) => {
     }
 });
 
-/**
- * Callable function to test generateResponse.
- *
- * @param {object} _data - The data passed from the client (unused).
- * @param {object} _context - The context of the callable function (unused).
- * @returns {Promise<object>} - An object containing the test response.
- */
 // eslint-disable-next-line no-unused-vars
 exports.testGenerateResponse = functions.https.onCall(async (_data, _context) => {
     try {
-        const testQuery = "'write a poem about what beer is best.'";
+        const testQuery = "'write a hard riddle where the answer is one Spider-man's villain but don't tell who .'";
         const response = await generateResponse(
             "gpt-4o",
             0.7,

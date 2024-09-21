@@ -75,6 +75,13 @@ const TestingFeaturesScreen = () => {
                 <Text style={styles.buttonText}>Go to Test Photo Capture</Text>
             </Pressable>
 
+            <Pressable
+                style={styles.testButton}
+                onPress={() => navigation.navigate('TestFaceSwap')}
+            >
+                <Text style={styles.buttonText}>Go to Test Face Swap</Text>
+            </Pressable>
+
             {/* Display Test Response */}
             {testResponse !== '' && (
                 <View style={styles.responseContainer}>
