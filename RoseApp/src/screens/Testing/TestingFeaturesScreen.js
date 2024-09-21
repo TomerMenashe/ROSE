@@ -1,9 +1,12 @@
 import React, { useState } from "react";
 import { Alert, Pressable, Text, View, StyleSheet } from "react-native";
-import { firebase } from "../firebase/firebase";
+import { firebase } from "../../firebase/firebase";
 import { getFunctions, httpsCallable } from 'firebase/functions';  // Import Firebase functions
+import { useNavigation } from '@react-navigation/native'; // Import navigation hook
+
 
 const TestingFeaturesScreen = () => {
+    const navigation = useNavigation();
 
     const [testResponse, setTestResponse] = useState('');  // State to hold the test response
     // Initialize Firebase Functions inside the component
@@ -63,6 +66,13 @@ const TestingFeaturesScreen = () => {
                     "o/ImagesForTesting%2FScrewdriver.jpg?alt=media&token=06f64d98-49aa-4e8c-9d13-4321a93296be"
                 )}>
                 <Text style={styles.buttonText}>Test item in image</Text>
+            </Pressable>
+
+            <Pressable
+                style={styles.testButton}
+                onPress={() => navigation.navigate('TestPhotoCapture')}
+            >
+                <Text style={styles.buttonText}>Go to Test Photo Capture</Text>
             </Pressable>
 
             {/* Display Test Response */}

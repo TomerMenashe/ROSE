@@ -15,7 +15,8 @@ import JoinGameScreen from './src/screens/JoinGameScreen';
 import CreateGameScreen from './src/screens/CreateGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
 import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';  // Import PhotoEscape Navigator
-import TestingFeaturesScreen from './src/screens/TestingFeaturesScreen';
+import TestingFeaturesScreen from './src/screens/Testing/TestingFeaturesScreen';
+import TestPhotoCapture from './src/screens/Testing/TestPhotoCapture';
 
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
@@ -99,7 +100,14 @@ export default function App() {
             name="TestingFeatures"
             component={TestingFeaturesScreen}
             options={{ title: 'Testing Features' }} />
+
+        <MainStack.Screen
+            name="TestPhotoCapture"
+            component={TestPhotoCapture} />
+
       </MainStack.Navigator>
+
+
     </NavigationContainer>
   );
 }
