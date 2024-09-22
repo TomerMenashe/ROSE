@@ -122,8 +122,8 @@ exports.swapFaces = functions.https.onCall(async (_data, _context) => {
 
             // API calls
             const [response1, response2] = await Promise.all([
-                axios.post('https://api.segmind.com/v1/faceswap-v2', data1, { headers: { 'x-api-key': 'SG_fc45d3379f2df142' } }),
-                axios.post('https://api.segmind.com/v1/faceswap-v2', data2, { headers: { 'x-api-key': 'SG_fc45d3379f2df142' } })
+                axios.post('https://api.segmind.com/v1/faceswap-v2', data1, { headers: { 'x-api-key': 'SG_6fd2da6a5cdfd18d' } }),
+                axios.post('https://api.segmind.com/v1/faceswap-v2', data2, { headers: { 'x-api-key': 'SG_6fd2da6a5cdfd18d' } })
             ]);
 
             if (response1.data.image && response2.data.image) {

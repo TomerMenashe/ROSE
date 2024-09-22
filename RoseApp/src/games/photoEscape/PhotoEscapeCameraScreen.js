@@ -87,7 +87,10 @@ const PhotoEscapeCameraScreen = () => {
                 await roomRef.child('winner').set({ image: photoUrl });
                 navigation.navigate('CongratulationsScreen', { itemName, winnerImage: photoUrl });
             } else {
+                // If the item is not present, reset to take another photo
                 setWrongObject(true);
+                setPhoto(null); // Clear the photo to go back to the camera view
+                setLoading(false); // Stop loading
             }
         } catch (error) {
             console.error('Error checking item in image:', error);
