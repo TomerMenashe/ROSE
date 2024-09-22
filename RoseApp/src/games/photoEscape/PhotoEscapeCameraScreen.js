@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useNavigation } from '@react-navigation/native'; // Import useNavigation hook for navigation
+import { useNavigation, useRoute } from '@react-navigation/native'; // Import useNavigation and useRoute for navigation
 import { firebase } from '../../firebase/firebase';
 
 const PhotoEscapeCameraScreen = () => {
@@ -13,23 +13,11 @@ const PhotoEscapeCameraScreen = () => {
     const cameraRef = useRef(null);
     const storage = firebase.storage();
     const photoRef = firebase.database().ref('photo');
-    const itemRef = firebase.database().ref('item');
     const winnerRef = firebase.database().ref('winner');
-    const [itemName, setItemName] = useState('');
     const navigation = useNavigation(); // Use navigation for page redirection
+    const { params } = useRoute(); // Get the passed item (object) from the route parameters
+    const { pin, gameNumber, itemName } = params; // itemName is passed from the previous screen
     const functions = firebase.functions();
-
-    const generateNewItem = async () => {
-        try {
-            const getRandomItem = firebase.functions().httpsCallable('getRandomItem');
-            const result = await getRandomItem();
-            const newItem = result.data.item;
-            itemRef.set(newItem);
-            setItemName(newItem);
-        } catch (error) {
-            console.error('Error generating new item:', error);
-        }
-    };
 
     useEffect(() => {
         if (!permission) {
@@ -37,8 +25,6 @@ const PhotoEscapeCameraScreen = () => {
         } else if (!permission.granted) {
             requestPermission();
         }
-
-        generateNewItem();
     }, [permission]);
 
     if (!permission || permission.status === 'undetermined') {
@@ -89,10 +75,8 @@ const PhotoEscapeCameraScreen = () => {
         try {
             const base64Image = await blobToBase64(photoBlob);
             const isItemInImage = firebase.functions().httpsCallable('isItemInImage');
-            const itemSnapshot = await itemRef.once('value');
-            const item = itemSnapshot.val();
 
-            const result = await isItemInImage({ currentItem: item, image: base64Image });
+            const result = await isItemInImage({ currentItem: itemName, image: base64Image });  // Use the item passed from the previous screen
             const { isPresent } = result.data;
             setLoading(false); // Stop loading after checking
             if (isPresent) {
@@ -113,9 +97,14 @@ const PhotoEscapeCameraScreen = () => {
         setWrongObject(false); // Reset wrong object state
     };
 
+    // Handle give up, navigate to Lost screen
+    const handleGiveUp = () => {
+        navigation.navigate('LostScreen');  // Navigate to the Lost screen
+    };
+
     return (
         <View style={styles.container}>
-            <Text style={styles.text}>📷 Find: <Text style={styles.itemText}>{itemName}</Text></Text>
+            {/* Camera View */}
             {!photo ? (
                 <CameraView
                     ref={cameraRef}
@@ -161,6 +150,11 @@ const PhotoEscapeCameraScreen = () => {
                     )}
                 </View>
             )}
+
+            {/* Give Up Button */}
+            <TouchableOpacity style={styles.giveUpButton} onPress={handleGiveUp}>
+                <Text style={styles.giveUpButtonText}>Give Up</Text>
+            </TouchableOpacity>
         </View>
     );
 };
@@ -171,16 +165,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#101010',
-    },
-    text: {
-        fontSize: 24,
-        color: '#FFFFFF',
-        marginBottom: 20,
-        fontWeight: 'bold',
-        textAlign: 'center',
-    },
-    itemText: {
-        color: '#FFCC00',
     },
     camera: {
         width: '90%',
@@ -236,12 +220,18 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    resultText: {
-        fontSize: 20,
-        color: '#FFCC00',
+    giveUpButton: {
+        backgroundColor: '#FF4B4B',
+        padding: 15,
+        borderRadius: 10,
+        marginTop: 30,
+        width: '80%',
+        alignItems: 'center',
+    },
+    giveUpButtonText: {
+        color: '#fff',
+        fontSize: 18,
         fontWeight: 'bold',
-        marginTop: 10,
-        textAlign: 'center',
     },
     loadingContainer: {
         marginTop: 20,
@@ -259,6 +249,13 @@ const styles = StyleSheet.create({
     wrongObjectContainer: {
         marginTop: 20,
         alignItems: 'center',
+    },
+    resultText: {
+        fontSize: 20,
+        color: '#FFCC00',
+        fontWeight: 'bold',
+        marginTop: 10,
+        textAlign: 'center',
     },
 });
 

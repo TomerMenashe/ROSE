@@ -5,6 +5,7 @@ import PhotoEscapeResultScreen from './PhotoEscapeResultScreen'; // Result scree
 import PhotoEscapeLimerickScreen from './PhotoEscapeLimerickScreen'; // Limerick screen
 import PhotoEscapeCameraScreen from './PhotoEscapeCameraScreen'; // Camera screen
 import CongratulationsScreen from './CongratulationsScreen'; // Congratulations screen
+import LostScreen from './LostScreen'; // Import LostScreen
 import { useRoute } from '@react-navigation/native';
 
 const Stack = createNativeStackNavigator();
@@ -38,11 +39,16 @@ const PhotoEscapeNavigator = () => {
         component={PhotoEscapeResultScreen}
         options={{ headerShown: false }}
       />
-      {/* Add the CongratulationsScreen to the navigator */}
       <Stack.Screen
         name="CongratulationsScreen"
         component={CongratulationsScreen}
         options={{ headerShown: false }} // You can modify this to show a header if desired
+      />
+      {/* Add LostScreen to the navigator */}
+      <Stack.Screen
+        name="LostScreen"
+        component={LostScreen}
+        options={{ headerShown: false }}  // Hide the header
       />
     </Stack.Navigator>
   );
