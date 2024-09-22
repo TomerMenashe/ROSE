@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, Pressable, ImageBackground, Dimensions } from 'react-native';
+import { View, TextInput, StyleSheet, Text, Pressable, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
 import { firebase } from '../firebase/firebase';
 import { useNavigation } from '@react-navigation/native';  // Import navigation hook
 
@@ -11,9 +11,10 @@ const JoinGameScreen = () => {
   const navigation = useNavigation();      // Hook to navigate between screens
   const currentUser = firebase.auth().currentUser;  // Get the current authenticated user
 
+  // Handle game joining
   const handleJoinGame = () => {
-    if (!gamePin) {
-      setError('Please enter a valid PIN.');
+    if (!gamePin || gamePin.length < 4) {  // Assume 4-digit PIN for this example
+      setError('Please enter a valid 4-digit PIN.');
       return;
     }
 
@@ -36,6 +37,13 @@ const JoinGameScreen = () => {
     });
   };
 
+  // Handle individual PIN box input
+  const handlePinChange = (text) => {
+    if (text.length <= 4) {  // Limit PIN to 4 digits
+      setGamePin(text);
+    }
+  };
+
   return (
       <ImageBackground
           source={require('../../assets/joinGame.jpeg')}  // Join game background image
@@ -45,16 +53,24 @@ const JoinGameScreen = () => {
         <View style={styles.container}>
           <Text style={styles.title}>Rose</Text>
 
-          {/* Game PIN Input */}
-          <TextInput
-              style={styles.input}
-              placeholder="Game PIN"
-              placeholderTextColor="#808080"
+          {/* PIN Input Boxes */}
+          <View style={styles.pinContainer}>
+            {Array(4).fill().map((_, index) => (
+              <TouchableOpacity key={index} style={styles.pinBox} onPress={() => this.pinInput.focus()}>
+                <Text style={styles.pinText}>{gamePin[index] || ''}</Text>
+              </TouchableOpacity>
+            ))}
+            {/* Hidden TextInput to capture actual input */}
+            <TextInput
+              ref={ref => { this.pinInput = ref; }}  // Reference to focus when clicking boxes
+              style={styles.hiddenInput}
               value={gamePin}
               keyboardType="numeric"
-              inputMode="numeric"
-              onChangeText={setGamePin}
-          />
+              maxLength={4}  // Limit to 4 digits
+              onChangeText={handlePinChange}
+              autoFocus={true}  // Focus automatically on this input
+            />
+          </View>
 
           {/* Error Message */}
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -86,16 +102,31 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     marginBottom: 40,  // Adjust margin
   },
-  input: {
-    height: 50,
+  pinContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '80%',
+    marginBottom: 20,
+  },
+  pinBox: {
     borderColor: '#FF4B4B',
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
-    marginBottom: 20,
-    width: '80%',
+    height: 60,
+    width: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#FFFFFF',
-    textAlign: 'center',
+  },
+  pinText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  hiddenInput: {
+    position: 'absolute',
+    opacity: 0,
   },
   button: {
     backgroundColor: '#FF4B4B',

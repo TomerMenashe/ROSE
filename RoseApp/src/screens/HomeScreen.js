@@ -95,22 +95,26 @@ const HomeScreen = ({ navigation }) => {
       resizeMode="cover"
     >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.greetingContainer}>
-          {/* Animated Greeting */}
-          <Animated.Text style={[styles.letter, animatedStyle1]}>
+        {/* Admin Name at the Top */}
+        <View style={styles.adminContainer}>
+          <Animated.Text style={[styles.adminText, animatedStyle1]}>
             {username.charAt(0).toUpperCase()}
           </Animated.Text>
-          <Animated.Text style={[styles.letter, animatedStyle2]}>
+          <Animated.Text style={[styles.adminText, animatedStyle2]}>
             {username.charAt(1).toUpperCase()}
           </Animated.Text>
-          <Animated.Text style={[styles.letter, animatedStyle3]}>
+          <Animated.Text style={[styles.adminText, animatedStyle3]}>
             {username.charAt(2).toUpperCase()}
           </Animated.Text>
-          <Animated.Text style={[styles.letter, animatedStyle4]}>
-            {username.slice(3).toUpperCase()}{/* Display the rest of the username */}
+          <Animated.Text style={[styles.adminText, animatedStyle4]}>
+            {username.slice(3).toUpperCase()} {/* Display the rest of the username */}
           </Animated.Text>
+        </View>
+
+        <View style={styles.greetingContainer}>
+          {/* Animated Greeting */}
           <Animated.Text style={[styles.greeting, animatedStyle5]}>
-            , Are you ready to get in Love?
+            Are you ready to get in Love?
           </Animated.Text>
         </View>
 
@@ -143,18 +147,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  adminContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 90,  // Increased space below the admin name
+    marginTop: -100,   // Move the admin name higher on the screen
+  },
+  adminText: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    fontFamily: 'Doodle-Font',  // Custom font for the admin name
+    color: '#FFFFFF',
+  },
   greetingContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 50,  // Increased space below the greeting
-    marginTop: -70,   // Move the greeting higher on the screen
-  },
-  letter: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    fontFamily: 'Doodle-Font',  // Custom font for animation
-    color: '#FFFFFF',
+    marginBottom: 150,  // Increased space below the greeting
   },
   greeting: {
     fontSize: 27,

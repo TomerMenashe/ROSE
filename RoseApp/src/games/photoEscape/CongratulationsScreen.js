@@ -7,8 +7,8 @@ const CongratulationsScreen = () => {
     const route = useRoute();
     const { itemName } = route.params;  // Receive the item name from the previous screen
 
-    const moveToNextObject = () => {
-        navigation.navigate('PhotoEscapeCameraScreen');  // Redirect back to the camera screen
+    const moveToNextGame = () => {
+        navigation.navigate('TestFaceSwap');  // Navigate to the next game screen, adjust as per your App.js
     };
 
     return (
@@ -16,8 +16,8 @@ const CongratulationsScreen = () => {
             <Text style={styles.congratsText}>🎉 Congratulations!</Text>
             <Text style={styles.text}>You successfully found the {itemName}!</Text>
 
-            <TouchableOpacity style={styles.button} onPress={moveToNextObject}>
-                <Text style={styles.buttonText}>Next Object</Text>
+            <TouchableOpacity style={styles.button} onPress={moveToNextGame}>
+                <Text style={styles.buttonText}>Next Game</Text>
             </TouchableOpacity>
         </View>
     );
