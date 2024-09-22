@@ -1,7 +1,8 @@
+// /src/screens/PhotoEscapeLimerickScreen.js
+
 import React, { useState, useEffect } from "react";
 import { Alert, Text, View, StyleSheet, ActivityIndicator, ImageBackground, TouchableOpacity } from "react-native";
 import { firebase } from "../../firebase/firebase";
-import { getFunctions, httpsCallable } from 'firebase/functions';  // Import Firebase functions
 import { useNavigation } from '@react-navigation/native';  // Import navigation hook
 
 const PhotoEscapeLimerickScreen = ({ route }) => {
@@ -11,33 +12,32 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
     const [loading, setLoading] = useState(false);  // State to handle loading UI
     const [itemName, setItemName] = useState('');  // State to store the item name
 
-    const functions = getFunctions(firebase.app(), 'us-central1');  // Initialize Firebase Functions
-
-    // Function to call the getHamshir Firebase function with a static object ('bottle')
-    const callGenerateItemAndLimerick = async () => {
-        setLoading(true);  // Show the loading indicator
-        try {
-            const getItem = httpsCallable(functions, 'getRandomItem')
-            const resultItem = await getItem();
-            const selectedItem = resultItem.data;
-            const getHamshir = httpsCallable(functions, 'getHamshir');
-            const result = await getHamshir({ item: selectedItem});  // Pass 'bottle' as the static object
-
-            const { response } = result.data;  // Extract the limerick response from backend
-            setLimerickResponse(response);  // Set the response in the state to display it
-            setItemName(selectedItem);  // Set the item name (could be dynamic if you modify the backend)
-        } catch (error) {
-            console.error(error);
-            Alert.alert('Error', 'Failed to generate a limerick. Please try again.');
-        } finally {
-            setLoading(false);  // Hide the loading indicator
-        }
-    };
-
-    // Automatically call the function when the screen loads
     useEffect(() => {
-        callGenerateItemAndLimerick();
-    }, []);
+        const roomRef = firebase.database().ref(`room/${pin}`);
+
+        const fetchItemAndLimerick = async () => {
+            setLoading(true);
+            try {
+                // Fetch item and limerick from Firebase
+                const itemSnapshot = await roomRef.child('item').once('value');
+                const limerickSnapshot = await roomRef.child('limerick').once('value');
+
+                if (itemSnapshot.exists() && limerickSnapshot.exists()) {
+                    setItemName(itemSnapshot.val());
+                    setLimerickResponse(limerickSnapshot.val());
+                } else {
+                    Alert.alert('Error', 'Failed to retrieve the item or limerick.');
+                }
+            } catch (error) {
+                console.error('Error fetching item and limerick:', error);
+                Alert.alert('Error', 'Failed to retrieve the item or limerick.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchItemAndLimerick();
+    }, [pin]);
 
     // Navigate to the camera screen, passing the item name
     const startSearch = () => {
@@ -75,7 +75,7 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
     );
 };
 
-// Styles for the component
+// Styles for the component remain the same as before
 const styles = StyleSheet.create({
     background: {
         flex: 1,
@@ -89,20 +89,20 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     header: {
-        fontSize: 32,  // Increased size
+        fontSize: 32,
         fontWeight: 'bold',
-        color: '#FFFFFF',  // Change color to white for better visibility on background
+        color: '#FFFFFF',
         marginBottom: 20,
         textAlign: 'center',
     },
     limerickText: {
-        fontSize: 24,  // Make the limerick text bigger
-        color: '#FFFFFF',  // Change to white for better contrast on background
+        fontSize: 24,
+        color: '#FFFFFF',
         textAlign: 'center',
-        marginBottom: 30,  // Add more margin for better spacing
+        marginBottom: 30,
         paddingHorizontal: 20,
-        fontStyle: 'italic',  // Add a bit of styling
-        lineHeight: 34,  // Increase line height for better readability
+        fontStyle: 'italic',
+        lineHeight: 34,
     },
     searchButtonContainer: {
         alignItems: 'center',
@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
     button: {
-        backgroundColor: '#FF4B4B',  // Red button style
+        backgroundColor: '#FF4B4B',
         paddingVertical: 15,
         paddingHorizontal: 40,
         borderRadius: 10,
