@@ -3,14 +3,14 @@
 import React, { useState, useEffect } from "react";
 import { Alert, Text, View, StyleSheet, ActivityIndicator, ImageBackground, TouchableOpacity } from "react-native";
 import { firebase } from "../../firebase/firebase";
-import { useNavigation } from '@react-navigation/native';  // Import navigation hook
+import { useNavigation } from '@react-navigation/native';
 
 const PhotoEscapeLimerickScreen = ({ route }) => {
     const navigation = useNavigation();
-    const { pin, gameNumber = 1 } = route.params;  // Get the pin and game number
-    const [limerickResponse, setLimerickResponse] = useState('');  // State to hold the limerick response
-    const [loading, setLoading] = useState(false);  // State to handle loading UI
-    const [itemName, setItemName] = useState('');  // State to store the item name
+    const { pin, gameNumber = 1 } = route.params;
+    const [limerickResponse, setLimerickResponse] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [itemName, setItemName] = useState('');
 
     useEffect(() => {
         const roomRef = firebase.database().ref(`room/${pin}`);
@@ -37,33 +37,38 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
         };
 
         fetchItemAndLimerick();
-    }, [pin]);
 
-    // Navigate to the camera screen, passing the item name
+        // Listen for winner announcement
+        const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const winnerData = snapshot.val();
+                navigation.navigate('CongratulationsScreen', { itemName, winnerImage: winnerData.image });
+            }
+        });
+
+        return () => roomRef.child('winner').off('value', winnerListener);
+    }, [pin, navigation]);
+
     const startSearch = () => {
-        navigation.navigate('PhotoEscapeCamera', { pin, gameNumber, itemName });  // Pass the item name along with pin and gameNumber
+        navigation.navigate('PhotoEscapeCamera', { pin, gameNumber, itemName });
     };
 
     return (
         <ImageBackground
-            source={require('./assets/background.jpeg')}  // Set your background image here
+            source={require('./assets/background.jpeg')}
             style={styles.background}
             resizeMode="cover"
         >
             <View style={styles.container}>
                 <Text style={styles.header}>Find the Object</Text>
-
-                {/* Loading Indicator */}
                 {loading ? (
                     <ActivityIndicator size="large" color="#FFFFFF" />
                 ) : (
                     <>
-                        {/* Display the limerick */}
                         <Text style={styles.limerickText}>{limerickResponse}</Text>
                     </>
                 )}
 
-                {/* Button to start searching for the object */}
                 <View style={styles.searchButtonContainer}>
                     <Text style={styles.hintText}>When ready, tap below to start searching!</Text>
                     <TouchableOpacity style={styles.button} onPress={startSearch} disabled={loading}>
@@ -75,7 +80,7 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
     );
 };
 
-// Styles for the component remain the same as before
+// Styles remain the same as before
 const styles = StyleSheet.create({
     background: {
         flex: 1,

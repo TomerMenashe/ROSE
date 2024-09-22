@@ -1,20 +1,25 @@
+// /src/screens/CongratulationsScreen.js
+
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const CongratulationsScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { itemName } = route.params;  // Receive the item name from the previous screen
+    const { itemName, winnerImage } = route.params;  // Get the item name and winner's image URL
 
     const moveToNextGame = () => {
-        navigation.navigate('TestFaceSwap');  // Navigate to the next game screen, adjust as per your App.js
+        navigation.navigate('TestFaceSwap');  // Navigate to the next game screen
     };
 
     return (
         <View style={styles.container}>
             <Text style={styles.congratsText}>🎉 Congratulations!</Text>
             <Text style={styles.text}>You successfully found the {itemName}!</Text>
+
+            {/* Display the winner's image */}
+            {winnerImage && <Image source={{ uri: winnerImage }} style={styles.winnerImage} />}
 
             <TouchableOpacity style={styles.button} onPress={moveToNextGame}>
                 <Text style={styles.buttonText}>Next Game</Text>
@@ -40,6 +45,14 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         marginVertical: 20,
         textAlign: 'center',
+    },
+    winnerImage: {
+        width: 250,
+        height: 300,
+        borderRadius: 10,
+        marginVertical: 20,
+        borderWidth: 2,
+        borderColor: '#FFCC00',
     },
     button: {
         backgroundColor: '#FF4B4B',

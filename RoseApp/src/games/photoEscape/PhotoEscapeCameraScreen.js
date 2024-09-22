@@ -1,23 +1,23 @@
+// /src/screens/PhotoEscapeCameraScreen.js
+
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useNavigation, useRoute } from '@react-navigation/native'; // Import useNavigation and useRoute for navigation
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
 
 const PhotoEscapeCameraScreen = () => {
     const [permission, requestPermission] = useCameraPermissions();
     const [photo, setPhoto] = useState(null);
     const [cameraType, setCameraType] = useState('front');
-    const [loading, setLoading] = useState(false); // For showing loading spinner
-    const [wrongObject, setWrongObject] = useState(false); // To track if the wrong object is found
+    const [loading, setLoading] = useState(false);
+    const [wrongObject, setWrongObject] = useState(false);
     const cameraRef = useRef(null);
     const storage = firebase.storage();
-    const photoRef = firebase.database().ref('photo');
-    const winnerRef = firebase.database().ref('winner');
-    const navigation = useNavigation(); // Use navigation for page redirection
-    const { params } = useRoute(); // Get the passed item (object) from the route parameters
-    const { pin, gameNumber, itemName } = params; // itemName is passed from the previous screen
-    const functions = firebase.functions();
+    const navigation = useNavigation();
+    const { params } = useRoute();
+    const { pin, gameNumber, itemName } = params;
+    const roomRef = firebase.database().ref(`room/${pin}`);
 
     useEffect(() => {
         if (!permission) {
@@ -25,21 +25,24 @@ const PhotoEscapeCameraScreen = () => {
         } else if (!permission.granted) {
             requestPermission();
         }
-    }, [permission]);
 
-    if (!permission || permission.status === 'undetermined') {
-        return <View><Text>Requesting camera permissions...</Text></View>;
-    }
-    if (!permission.granted) {
-        return <View><Text>No access to camera</Text></View>;
-    }
+        // Add listener to check for a winner
+        const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
+            if (snapshot.exists()) {
+                const winnerData = snapshot.val();
+                navigation.navigate('CongratulationsScreen', { itemName, winnerImage: winnerData.image });
+            }
+        });
+
+        return () => roomRef.child('winner').off('value', winnerListener);
+    }, [permission, roomRef, navigation, itemName]);
 
     const takePicture = async () => {
         if (cameraRef.current) {
             const options = { quality: 0.5, base64: true };
             const data = await cameraRef.current.takePictureAsync(options);
             setPhoto(data.uri);
-            setWrongObject(false); // Reset wrong object state when taking a new picture
+            setWrongObject(false);
         }
     };
 
@@ -54,7 +57,7 @@ const PhotoEscapeCameraScreen = () => {
 
     const submitPhoto = async () => {
         if (!photo) return;
-        setLoading(true); // Start loading
+        setLoading(true);
         const response = await fetch(photo);
         const blob = await response.blob();
         const fileName = 'photo_' + new Date().getTime() + '.png';
@@ -63,11 +66,12 @@ const PhotoEscapeCameraScreen = () => {
         try {
             const snapshot = await storageRef.put(blob);
             const url = await snapshot.ref.getDownloadURL();
-            photoRef.set(url);
+
+            // Check if the item is correct
             checkItemInPhoto(blob, url);
         } catch (error) {
             console.error('Error uploading file:', error);
-            setLoading(false); // Stop loading in case of an error
+            setLoading(false);
         }
     };
 
@@ -75,31 +79,29 @@ const PhotoEscapeCameraScreen = () => {
         try {
             const base64Image = await blobToBase64(photoBlob);
             const isItemInImage = firebase.functions().httpsCallable('isItemInImage');
-
-            const result = await isItemInImage({ currentItem: itemName, image: base64Image });  // Use the item passed from the previous screen
+            const result = await isItemInImage({ currentItem: itemName, image: base64Image });
             const { isPresent } = result.data;
-            setLoading(false); // Stop loading after checking
+
             if (isPresent) {
-                winnerRef.set(photoUrl).then(() => {
-                    navigation.navigate('CongratulationsScreen', { itemName }); // Navigate to the Congratulations screen
-                });
+                // Store the winning image in the database
+                await roomRef.child('winner').set({ image: photoUrl });
+                navigation.navigate('CongratulationsScreen', { itemName, winnerImage: photoUrl });
             } else {
-                setWrongObject(true); // Display wrong object message
+                setWrongObject(true);
             }
         } catch (error) {
             console.error('Error checking item in image:', error);
-            setLoading(false); // Stop loading in case of an error
+            setLoading(false);
         }
     };
 
     const resetCapture = () => {
         setPhoto(null);
-        setWrongObject(false); // Reset wrong object state
+        setWrongObject(false);
     };
 
-    // Handle give up, navigate to Lost screen
     const handleGiveUp = () => {
-        navigation.navigate('LostScreen');  // Navigate to the Lost screen
+        navigation.navigate('LostScreen');
     };
 
     return (
@@ -131,15 +133,12 @@ const PhotoEscapeCameraScreen = () => {
                         </View>
                     )}
 
-                    {/* Show loading indicator while waiting */}
                     {loading && (
                         <View style={styles.loadingContainer}>
-                            <Image source={require('./assets/loadingGif.gif')} style={styles.loadingGif} />
                             <Text style={styles.loadingText}>Processing your image...</Text>
                         </View>
                     )}
 
-                    {/* Show wrong object message and Try Again button */}
                     {wrongObject && !loading && (
                         <View style={styles.wrongObjectContainer}>
                             <Text style={styles.resultText}>❌ Wrong Object! Please try again.</Text>
@@ -236,10 +235,6 @@ const styles = StyleSheet.create({
     loadingContainer: {
         marginTop: 20,
         alignItems: 'center',
-    },
-    loadingGif: {
-        width: 50,
-        height: 50,
     },
     loadingText: {
         color: '#FFFFFF',
