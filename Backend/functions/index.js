@@ -234,3 +234,54 @@ exports.testGenerateResponse = functions.https.onCall(async (_data, _context) =>
         throw new functions.https.HttpsError('internal', error.message);
     }
 });
+
+/**
+ * Callable function to get Hamshir about a given item.
+ *
+ * @param {object} data - The data payload containing the item.
+ * @param {string} data.item - The name of the item to get an opinion on.
+ * @returns {Promise<object>} - An object containing Hamshir.
+ */
+// eslint-disable-next-line no-unused-vars
+exports.getHamshir = functions.https.onCall(async (data, _context) => {
+    try {
+        const { item } = data;
+
+        if (!item) {
+            throw new functions.https.HttpsError(
+                'invalid-argument',
+                'The function must be called with an "item" argument.'
+            );
+        }
+
+        const prompt = `write a small short poem that is also a funny rhymed riddle about the item: ${item}.
+        instructions:
+        1. the person who reads this short poem will need to guess that the item behind it is: ${item}.
+        2. make it funny.
+        3. Make it easy to guess.
+        4. keep it 4 rows long.
+        5. dont write back anything but the poem rhymed riddle.
+        6. use simple and easy to understand language
+
+        here is an example for the item "bra":
+
+        I have two cups but hold no tea,
+        Straps and hooks are parts of me.
+        I support you throughout the day,
+        Under your shirt is where I stay.`;
+
+        const response = await generateResponse(
+            "gpt-4o",
+            0.7,
+            "text",
+            prompt,
+            null,
+            150
+        );
+
+        return { response };
+    } catch (error) {
+        console.error(error);
+        throw new functions.https.HttpsError('internal', error.message);
+    }
+});
