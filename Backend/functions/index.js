@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const axios = require('axios');
 const { getStorage } = require('firebase-admin/storage');
+const items = ['bra', 'headphones', 'condom', 'thong', 'toothbrush', 'laptop', 'tv remote', 'tomato', 'toilet brush'];
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -163,27 +164,10 @@ exports.swapFaces = functions.https.onCall(async (_data, _context) => {
     }
 });
 
-// Existing functions with ESLint rule fixes
+
 // eslint-disable-next-line no-unused-vars
 exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
-    try {
-        const response = await generateResponse(
-            "gpt-4o",
-            1.7,
-            "text",
-            "Create a list of 75 random items or products that are in every home. It could be anything " +
-            "as long as you are sure it's a must-have in every home and it's possible to hold " +
-            "it in your hand. Out of those 75 items, pick one and tell it to me. Do not show " +
-            "me the list of the words, only the one you choose from them. Answer with a single word.",
-            null,
-            5
-        );
-
-        return { item: response };
-    } catch (error) {
-        console.error(error);
-        throw new functions.https.HttpsError('internal', error.message);
-    }
+    return items[Math.floor(Math.random() * items.length) ];
 });
 
 // eslint-disable-next-line no-unused-vars

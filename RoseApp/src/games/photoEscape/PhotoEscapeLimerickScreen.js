@@ -17,12 +17,15 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
     const callGenerateItemAndLimerick = async () => {
         setLoading(true);  // Show the loading indicator
         try {
+            const getItem = httpsCallable(functions, 'getRandomItem')
+            const resultItem = await getItem();
+            const selectedItem = resultItem.data;
             const getHamshir = httpsCallable(functions, 'getHamshir');
-            const result = await getHamshir({ item: 'bottle' });  // Pass 'bottle' as the static object
+            const result = await getHamshir({ item: selectedItem});  // Pass 'bottle' as the static object
 
             const { response } = result.data;  // Extract the limerick response from backend
             setLimerickResponse(response);  // Set the response in the state to display it
-            setItemName('bottle');  // Set the item name (could be dynamic if you modify the backend)
+            setItemName(selectedItem);  // Set the item name (could be dynamic if you modify the backend)
         } catch (error) {
             console.error(error);
             Alert.alert('Error', 'Failed to generate a limerick. Please try again.');
