@@ -1,13 +1,19 @@
 // /src/screens/TestFaceSwap.js
 
 import React, { useState, useEffect } from 'react';
-import { View, Button, Text, StyleSheet, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image, TouchableOpacity, Dimensions, ImageBackground } from 'react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getDatabase, ref, push, get } from 'firebase/database';
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+} from 'react-native-reanimated';
 
 // Initialize Firebase Functions and Database
 const functions = getFunctions();
 const database = getDatabase();
+const { height, width } = Dimensions.get('window');
 
 const TestFaceSwap = () => {
     const [loading, setLoading] = useState(false);
@@ -16,6 +22,19 @@ const TestFaceSwap = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userChoice, setUserChoice] = useState(null);
     const [pin, setPin] = useState(null);
+
+    // Shared values for animations
+    const fadeAnim = useSharedValue(0);
+    const slideAnim = useSharedValue(500);
+
+    // Animated styles
+    const fadeInStyle = useAnimatedStyle(() => ({
+        opacity: fadeAnim.value,
+    }));
+
+    const slideInStyle = useAnimatedStyle(() => ({
+        transform: [{ translateY: slideAnim.value }],
+    }));
 
     // Fetch the pin if it exists
     useEffect(() => {
@@ -50,6 +69,8 @@ const TestFaceSwap = () => {
             const swapFaces = httpsCallable(functions, 'swapFaces');
             const response = await swapFaces();
             setResults(response.data.results);
+            fadeAnim.value = withTiming(1, { duration: 1000 });
+            slideAnim.value = withTiming(0, { duration: 1000 });
         } catch (err) {
             setError(err.message);
         } finally {
@@ -79,9 +100,15 @@ const TestFaceSwap = () => {
                     timestamp: Date.now(),
                 });
 
-                // Move to the next pair
-                setCurrentIndex(currentIndex + 1);
-                setUserChoice(null);
+                // Move to the next pair with a slight delay for better experience
+                setTimeout(() => {
+                    setCurrentIndex(currentIndex + 1);
+                    setUserChoice(null);
+                    fadeAnim.value = 0;
+                    slideAnim.value = 500;
+                    fadeAnim.value = withTiming(1, { duration: 1000 });
+                    slideAnim.value = withTiming(0, { duration: 1000 });
+                }, 500);
             } catch (error) {
                 console.error('Error saving user choice:', error);
                 setError('Failed to save choice. Please try again.');
@@ -94,20 +121,30 @@ const TestFaceSwap = () => {
         if (results && currentIndex < results.length) {
             const pair = results[currentIndex];
             return (
-                <View style={styles.questionContainer}>
+                <Animated.View style={[styles.questionContainer, fadeInStyle]}>
                     <Text style={styles.questionText}>Who looks hotter?</Text>
                     <View style={styles.imageRow}>
                         <TouchableOpacity onPress={() => setUserChoice(1)} style={[styles.choiceContainer, userChoice === 1 && styles.selected]}>
-                            <Image source={{ uri: pair.url1.toString() }} style={styles.image} />
+                            <Image
+                                source={{ uri: pair.url1.toString() }}
+                                style={styles.image}
+                                resizeMode="contain" // Ensures the entire image is visible
+                            />
                             <Text style={styles.choiceText}>Choice 1</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setUserChoice(2)} style={[styles.choiceContainer, userChoice === 2 && styles.selected]}>
-                            <Image source={{ uri: pair.url2.toString() }} style={styles.image} />
+                            <Image
+                                source={{ uri: pair.url2.toString() }}
+                                style={styles.image}
+                                resizeMode="contain" // Ensures the entire image is visible
+                            />
                             <Text style={styles.choiceText}>Choice 2</Text>
                         </TouchableOpacity>
                     </View>
-                    <Button title="Submit Choice" onPress={handleSaveChoice} disabled={userChoice === null} />
-                </View>
+                    <TouchableOpacity style={styles.submitButton} onPress={handleSaveChoice} disabled={userChoice === null}>
+                        <Text style={styles.submitButtonText}>Submit Choice</Text>
+                    </TouchableOpacity>
+                </Animated.View>
             );
         }
 
@@ -119,67 +156,108 @@ const TestFaceSwap = () => {
     };
 
     return (
-        <View style={styles.container}>
-            <Button title="Activate FaceSwap" onPress={handleFaceSwap} />
-            {loading && <ActivityIndicator size="large" color="#0000ff" />}
-            {renderQuestion()}
-            {error && <Text style={styles.errorText}>Error: {error}</Text>}
-        </View>
+        <ImageBackground
+            source={require('../../../assets/background.jpeg')}
+            style={styles.background}
+            resizeMode="cover"
+        >
+            <View style={styles.container}>
+                <TouchableOpacity style={styles.activateButton} onPress={handleFaceSwap}>
+                    <Text style={styles.activateButtonText}>Activate FaceSwap</Text>
+                </TouchableOpacity>
+                {loading && <ActivityIndicator size="large" color="#FFFFFF" />}
+                {renderQuestion()}
+                {error && <Text style={styles.errorText}>Error: {error}</Text>}
+            </View>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
+    background: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
-        backgroundColor: '#f5f5f5',
+        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background for better contrast
     },
     questionContainer: {
         marginTop: 20,
         padding: 10,
-        backgroundColor: '#fff',
-        borderRadius: 5,
+        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Slightly transparent background
+        borderRadius: 20,
         alignItems: 'center',
+        width: '90%',
     },
     questionText: {
-        fontSize: 18,
+        fontSize: 22,
         marginBottom: 10,
         fontWeight: 'bold',
+        color: '#FF4B4B',
     },
     imageRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginVertical: 10,
+        marginVertical: 20,
     },
     choiceContainer: {
         alignItems: 'center',
         marginHorizontal: 10,
     },
     selected: {
-        borderColor: 'blue',
-        borderWidth: 2,
-        borderRadius: 5,
+        borderColor: '#FFCC00',
+        borderWidth: 3,
+        borderRadius: 10,
     },
     image: {
-        width: 150,
-        height: 150,
+        width: width * 0.4,
+        height: height * 0.3,
         marginBottom: 5,
-        borderRadius: 5,
+        borderRadius: 10,
     },
     choiceText: {
         fontSize: 16,
+        color: '#FF4B4B',
     },
     completeText: {
         fontSize: 18,
         marginTop: 20,
-        color: 'green',
+
+        color: '#00FF00',
         fontWeight: 'bold',
     },
     errorText: {
         color: 'red',
         marginTop: 10,
+    },
+    activateButton: {
+        backgroundColor: '#FF4B4B',
+        paddingVertical: 15,
+        paddingHorizontal: 40,
+        borderRadius: 25,
+        marginBottom: 20,
+    },
+    activateButtonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    submitButton: {
+        backgroundColor: '#4B94FF',
+        paddingVertical: 15,
+        paddingHorizontal: 30,
+        borderRadius: 25,
+        marginTop: 20,
+    },
+    submitButtonText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
 });
 
