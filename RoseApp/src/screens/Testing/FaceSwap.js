@@ -1,4 +1,4 @@
-// /src/screens/TestFaceSwap.js
+// /src/screens/FaceSwap.js
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image, TouchableOpacity, Dimensions, ImageBackground } from 'react-native';
@@ -15,7 +15,7 @@ const functions = getFunctions();
 const database = getDatabase();
 const { height, width } = Dimensions.get('window');
 
-const TestFaceSwap = () => {
+const FaceSwap = () => {
     const [loading, setLoading] = useState(false);
     const [results, setResults] = useState(null);
     const [error, setError] = useState(null);
@@ -261,4 +261,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default TestFaceSwap;
+export default FaceSwap;

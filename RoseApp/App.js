@@ -17,7 +17,7 @@ import RoomScreen from './src/screens/RoomScreen';
 import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';  // Import PhotoEscape Navigator
 import TestingFeaturesScreen from './src/screens/Testing/TestingFeaturesScreen';
 import TestPhotoCapture from './src/screens/Testing/TestPhotoCapture';
-import TestFaceSwap from './src/screens/Testing/TestFaceSwap';
+import TestFaceSwap from './src/screens/Testing/FaceSwap';
 
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
