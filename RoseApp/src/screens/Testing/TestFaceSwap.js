@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+// /src/screens/TestFaceSwap.js
+
+import React, { useState, useEffect } from 'react';
 import { View, Button, Text, StyleSheet, ActivityIndicator, Image, TouchableOpacity } from 'react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getDatabase, ref, push } from 'firebase/database';
+import { getDatabase, ref, push, get } from 'firebase/database';
 
 // Initialize Firebase Functions and Database
 const functions = getFunctions();
@@ -13,6 +15,30 @@ const TestFaceSwap = () => {
     const [error, setError] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [userChoice, setUserChoice] = useState(null);
+    const [pin, setPin] = useState(null);
+
+    // Fetch the pin if it exists
+    useEffect(() => {
+        const fetchPin = async () => {
+            try {
+                const participantsRef = ref(database, 'room');
+                const snapshot = await get(participantsRef);
+                if (snapshot.exists()) {
+                    snapshot.forEach((room) => {
+                        const roomId = room.key;
+                        const participants = room.val().participants;
+                        if (participants) {
+                            setPin(roomId);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching the pin:", error);
+            }
+        };
+
+        fetchPin();
+    }, []);
 
     // Function to call the swapFaces Cloud Function
     const handleFaceSwap = async () => {
@@ -36,11 +62,21 @@ const TestFaceSwap = () => {
         if (userChoice !== null) {
             try {
                 const selectedPair = results[currentIndex];
-                const choiceRef = ref(database, 'user_choices');
-                await push(choiceRef, {
-                    targetImagePair: selectedPair,
+                const basePath = pin ? `room/${pin}/faceSwaps` : 'GeneralFaceSwaps';
+
+                // Save the images
+                const imagesRef = ref(database, `${basePath}/images`);
+                await push(imagesRef, {
+                    url1: selectedPair.url1,
+                    url2: selectedPair.url2,
+                    timestamp: Date.now(),
+                });
+
+                // Save the pick
+                const picksRef = ref(database, `${basePath}/picks`);
+                await push(picksRef, {
                     chosenUrl: userChoice === 1 ? selectedPair.url1 : selectedPair.url2,
-                    timestamp: Date.now()
+                    timestamp: Date.now(),
                 });
 
                 // Move to the next pair
