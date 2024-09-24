@@ -52,18 +52,6 @@ const HomeScreen = ({ navigation }) => {
     };
   });
 
-  // Subscribe to authentication state changes
-  useEffect(() => {
-    const subscriber = firebase.auth().onAuthStateChanged((currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        // If user is not logged in, navigate to Login screen
-        navigation.replace('Login');
-      }
-    });
-    return subscriber; // Unsubscribe on unmount
-  }, []);
 
   // Animate the letters when the user is set
   useEffect(() => {

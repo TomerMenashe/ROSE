@@ -123,16 +123,16 @@ const SplashScreen = ({ navigation }) => {
           easing: Easing.out(Easing.ease),
         },
         () => {
-          // Navigate to Login screen after logo animation completes
-          runOnJS(navigateToLogin)();
+          // Navigate to Welcome screen after logo animation completes
+          runOnJS(navigateToWelcome)();
         }
       );
     }, 1000); // Delay equal to the total duration of letter animations
   }, []);
 
   // Function to handle navigation
-  const navigateToLogin = () => {
-    navigation.replace('Login');
+  const navigateToWelcome = () => {
+    navigation.replace('Welcome');
   };
 
   return (

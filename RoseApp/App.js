@@ -8,7 +8,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Import screens
 import SplashScreenComponent from './src/screens/SplashScreen';
-import LoginScreen from './src/screens/LoginScreen';
+import WelcomeScreen from './src/screens/WelcomeScreen';
+import SelfieScreen from './src/screens/SelfieScreen';
 import SignUpScreen from './src/screens/SignUpScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import JoinGameScreen from './src/screens/JoinGameScreen';
@@ -60,14 +61,14 @@ export default function App() {
           options={{ headerShown: false }}
         />
         <MainStack.Screen
-          name="Login"
-          component={LoginScreen}
+          name="Welcome"
+          component={WelcomeScreen}
           options={{ headerShown: false }}
         />
         <MainStack.Screen
-          name="SignUp"
-          component={SignUpScreen}
-          options={{ headerShown: false }}
+            name="Selfie"
+            component={SelfieScreen}
+            options={{ headerShown: false }}
         />
         <MainStack.Screen
           name="Home"
