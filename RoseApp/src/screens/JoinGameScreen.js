@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, Pressable, ImageBackground, Dimensions } from 'react-native';
+import { View, TextInput, StyleSheet, Text, Pressable, ImageBackground, Dimensions, Pressable } from 'react-native';
 import { firebase } from '../firebase/firebase';
 import { useNavigation } from '@react-navigation/native';  // Import navigation hook
 
