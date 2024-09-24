@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const LostScreen = () => {
@@ -14,9 +14,9 @@ const LostScreen = () => {
             <Text style={styles.title}>You Gave Up! 😢</Text>
             <Text style={styles.subtitle}>Don't worry, you can try again next time.</Text>
 
-            <TouchableOpacity style={styles.button} onPress={handleBackToHome}>
+            <Pressable style={styles.button} onPress={handleBackToHome}>
                 <Text style={styles.buttonText}>Back to Home</Text>
-            </TouchableOpacity>
+            </Pressable>
         </View>
     );
 };

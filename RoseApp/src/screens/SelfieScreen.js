@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera'; // Adjusted import to match your usage
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
@@ -75,9 +75,9 @@ const SelfieScreen = () => {
                     facing={cameraType} // Use facing prop for front camera
                 >
                     <View style={styles.cameraOverlay}>
-                        <TouchableOpacity style={styles.captureButton} onPress={takeSelfie}>
+                        <Pressable style={styles.captureButton} onPress={takeSelfie}>
                             <Text style={styles.captureButtonText}>Capture</Text>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </CameraView>
             ) : (
@@ -85,12 +85,12 @@ const SelfieScreen = () => {
                     <Image source={{ uri: photo }} style={styles.capturedPhoto} />
                     {!loading && (
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <TouchableOpacity style={styles.redButton} onPress={resetSelfie}>
+                            <Pressable style={styles.redButton} onPress={resetSelfie}>
                                 <Text style={styles.buttonText}>Retake</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.redButton} onPress={submitSelfie}>
+                            </Pressable>
+                            <Pressable style={styles.redButton} onPress={submitSelfie}>
                                 <Text style={styles.buttonText}>Submit</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     )}
 

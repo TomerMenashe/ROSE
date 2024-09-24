@@ -1,7 +1,7 @@
 // /src/screens/PhotoEscapeCameraScreen.js
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
@@ -117,9 +117,9 @@ const PhotoEscapeCameraScreen = () => {
                     facing={cameraType}
                 >
                     <View style={styles.cameraOverlay}>
-                        <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                        <Pressable style={styles.captureButton} onPress={takePicture}>
                             <Text style={styles.captureButtonText}>Capture</Text>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </CameraView>
             ) : (
@@ -127,12 +127,12 @@ const PhotoEscapeCameraScreen = () => {
                     <Image source={{ uri: photo }} style={styles.capturedPhoto} />
                     {!loading && !wrongObject && (
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <TouchableOpacity style={styles.redButton} onPress={resetCapture}>
+                            <Pressable style={styles.redButton} onPress={resetCapture}>
                                 <Text style={styles.buttonText}>🔄 Retake</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.redButton} onPress={submitPhoto}>
+                            </Pressable>
+                            <Pressable style={styles.redButton} onPress={submitPhoto}>
                                 <Text style={styles.buttonText}>✅ Submit</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     )}
 
@@ -145,18 +145,18 @@ const PhotoEscapeCameraScreen = () => {
                     {wrongObject && !loading && (
                         <View style={styles.wrongObjectContainer}>
                             <Text style={styles.resultText}>❌ Wrong Object! Please try again.</Text>
-                            <TouchableOpacity style={styles.redButton} onPress={resetCapture}>
+                            <Pressable style={styles.redButton} onPress={resetCapture}>
                                 <Text style={styles.buttonText}>Try Again</Text>
-                            </TouchableOpacity>
+                            </Pressable>
                         </View>
                     )}
                 </View>
             )}
 
             {/* Give Up Button */}
-            <TouchableOpacity style={styles.giveUpButton} onPress={handleGiveUp}>
+            <Pressable style={styles.giveUpButton} onPress={handleGiveUp}>
                 <Text style={styles.giveUpButtonText}>Give Up</Text>
-            </TouchableOpacity>
+            </Pressable>
         </View>
     );
 };

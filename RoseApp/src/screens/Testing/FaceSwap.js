@@ -1,7 +1,7 @@
 // /src/screens/FaceSwap.js
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, TouchableOpacity, Dimensions, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Image, Pressable, Dimensions, ImageBackground } from 'react-native';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { getDatabase, ref, push, get } from 'firebase/database';
 import Animated, {
@@ -124,26 +124,26 @@ const FaceSwap = () => {
                 <Animated.View style={[styles.questionContainer, fadeInStyle]}>
                     <Text style={styles.questionText}>Who looks hotter?</Text>
                     <View style={styles.imageRow}>
-                        <TouchableOpacity onPress={() => setUserChoice(1)} style={[styles.choiceContainer, userChoice === 1 && styles.selected]}>
+                        <Pressable onPress={() => setUserChoice(1)} style={[styles.choiceContainer, userChoice === 1 && styles.selected]}>
                             <Image
                                 source={{ uri: pair.url1.toString() }}
                                 style={styles.image}
                                 resizeMode="contain" // Ensures the entire image is visible
                             />
                             <Text style={styles.choiceText}>Choice 1</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => setUserChoice(2)} style={[styles.choiceContainer, userChoice === 2 && styles.selected]}>
+                        </Pressable>
+                        <Pressable onPress={() => setUserChoice(2)} style={[styles.choiceContainer, userChoice === 2 && styles.selected]}>
                             <Image
                                 source={{ uri: pair.url2.toString() }}
                                 style={styles.image}
                                 resizeMode="contain" // Ensures the entire image is visible
                             />
                             <Text style={styles.choiceText}>Choice 2</Text>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
-                    <TouchableOpacity style={styles.submitButton} onPress={handleSaveChoice} disabled={userChoice === null}>
+                    <Pressable style={styles.submitButton} onPress={handleSaveChoice} disabled={userChoice === null}>
                         <Text style={styles.submitButtonText}>Submit Choice</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                 </Animated.View>
             );
         }
@@ -162,9 +162,9 @@ const FaceSwap = () => {
             resizeMode="cover"
         >
             <View style={styles.container}>
-                <TouchableOpacity style={styles.activateButton} onPress={handleFaceSwap}>
+                <Pressable style={styles.activateButton} onPress={handleFaceSwap}>
                     <Text style={styles.activateButtonText}>Activate FaceSwap</Text>
-                </TouchableOpacity>
+                </Pressable>
                 {loading && <ActivityIndicator size="large" color="#FFFFFF" />}
                 {renderQuestion()}
                 {error && <Text style={styles.errorText}>Error: {error}</Text>}

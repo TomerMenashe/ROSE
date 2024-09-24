@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, TextInput, StyleSheet, Text, Pressable, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
+import { View, TextInput, StyleSheet, Text, Pressable, ImageBackground, Dimensions, Pressable } from 'react-native';
 import { firebase } from '../firebase/firebase';
 import { useNavigation } from '@react-navigation/native';  // Import navigation hook
 
@@ -56,9 +56,9 @@ const JoinGameScreen = () => {
           {/* PIN Input Boxes */}
           <View style={styles.pinContainer}>
             {Array(4).fill().map((_, index) => (
-              <TouchableOpacity key={index} style={styles.pinBox} onPress={() => this.pinInput.focus()}>
+              <Pressable key={index} style={styles.pinBox} onPress={() => this.pinInput.focus()}>
                 <Text style={styles.pinText}>{gamePin[index] || ''}</Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
             {/* Hidden TextInput to capture actual input */}
             <TextInput

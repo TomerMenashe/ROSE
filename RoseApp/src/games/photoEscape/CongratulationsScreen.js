@@ -1,7 +1,7 @@
 // /src/screens/CongratulationsScreen.js
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const CongratulationsScreen = () => {
@@ -21,9 +21,9 @@ const CongratulationsScreen = () => {
             {/* Display the winner's image */}
             {winnerImage && <Image source={{ uri: winnerImage }} style={styles.winnerImage} />}
 
-            <TouchableOpacity style={styles.button} onPress={moveToNextGame}>
+            <Pressable style={styles.button} onPress={moveToNextGame}>
                 <Text style={styles.buttonText}>Next Game</Text>
-            </TouchableOpacity>
+            </Pressable>
         </View>
     );
 };
