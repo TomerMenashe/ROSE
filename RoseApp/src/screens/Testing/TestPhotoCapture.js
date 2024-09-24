@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, Alert } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { firebase } from '../../firebase/firebase';
 
@@ -183,21 +183,21 @@ const TestPhotoCapture = () => {
                     facing={cameraType}
                 >
                     <View style={styles.cameraOverlay}>
-                        <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                        <Pressable style={styles.captureButton} onPress={takePicture}>
                             <Text style={styles.captureButtonText}>Capture</Text>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                 </CameraView>
             ) : (
                 <View>
                     <Image source={{ uri: photo }} style={styles.capturedPhoto} />
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <TouchableOpacity style={styles.retakeButton} onPress={resetCapture}>
+                        <Pressable style={styles.retakeButton} onPress={resetCapture}>
                             <Text style={styles.buttonText}>Retake</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.submitButton} onPress={submitPhoto}>
+                        </Pressable>
+                        <Pressable style={styles.submitButton} onPress={submitPhoto}>
                             <Text style={styles.buttonText}>Submit</Text>
-                        </TouchableOpacity>
+                        </Pressable>
                     </View>
                     {resultMessage ? (
                         <Text style={styles.resultText}>{resultMessage}</Text>

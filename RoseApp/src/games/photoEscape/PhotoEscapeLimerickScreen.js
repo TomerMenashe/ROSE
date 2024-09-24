@@ -1,7 +1,7 @@
 // /src/screens/PhotoEscapeLimerickScreen.js
 
 import React, { useState, useEffect } from "react";
-import { Alert, Text, View, StyleSheet, ActivityIndicator, ImageBackground, TouchableOpacity } from "react-native";
+import { Alert, Text, View, StyleSheet, ActivityIndicator, ImageBackground, Pressable } from "react-native";
 import { firebase } from "../../firebase/firebase";
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -70,9 +70,9 @@ const PhotoEscapeLimerickScreen = () => {
 
                 <View style={styles.searchButtonContainer}>
                     <Text style={styles.hintText}>When ready, tap below to start searching!</Text>
-                    <TouchableOpacity style={styles.button} onPress={startSearch} disabled={loading}>
+                    <Pressable style={styles.button} onPress={startSearch} disabled={loading}>
                         <Text style={styles.buttonText}>Start Search</Text>
-                    </TouchableOpacity>
+                    </Pressable>
                 </View>
             </View>
         </ImageBackground>
