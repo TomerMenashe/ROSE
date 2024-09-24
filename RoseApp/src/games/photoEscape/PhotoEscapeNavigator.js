@@ -1,57 +1,56 @@
+// /src/games/photoEscape/PhotoEscapeNavigator.js
+
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import PhotoEscapeReadyScreen from './PhotoEscapeReadyScreen';   // Ready screen
-import PhotoEscapeResultScreen from './PhotoEscapeResultScreen'; // Result screen
-import PhotoEscapeLimerickScreen from './PhotoEscapeLimerickScreen'; // Limerick screen
-import PhotoEscapeCameraScreen from './PhotoEscapeCameraScreen'; // Camera screen
-import CongratulationsScreen from './CongratulationsScreen'; // Congratulations screen
-import LostScreen from './LostScreen'; // Import LostScreen
+import PhotoEscapeReadyScreen from './PhotoEscapeReadyScreen';
+import PhotoEscapeResultScreen from './PhotoEscapeResultScreen';
+import PhotoEscapeLimerickScreen from './PhotoEscapeLimerickScreen';
+import PhotoEscapeCameraScreen from './PhotoEscapeCameraScreen';
+import CongratulationsScreen from './CongratulationsScreen';
+import LostScreen from './LostScreen';
 import { useRoute } from '@react-navigation/native';
 
 const Stack = createNativeStackNavigator();
 
 const PhotoEscapeNavigator = () => {
-  const route = useRoute();
-  const { pin } = route.params || {};  // Safely access pin
+    const route = useRoute();
+    const { pin, name, selfieURL } = route.params || {}; // Get pin, name, and selfieURL
 
-  console.log("PIN received in PhotoEscapeNavigator:", pin);  // Log PIN
-
-  return (
-    <Stack.Navigator initialRouteName="PhotoEscapeReady">
-      <Stack.Screen
-        name="PhotoEscapeReady"
-        component={PhotoEscapeReadyScreen}
-        initialParams={{ pin }}  // Pass the pin to the Ready screen
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="PhotoEscapeLimerick"
-        component={PhotoEscapeLimerickScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="PhotoEscapeCamera"
-        component={PhotoEscapeCameraScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="PhotoEscapeResult"
-        component={PhotoEscapeResultScreen}
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="CongratulationsScreen"
-        component={CongratulationsScreen}
-        options={{ headerShown: false }} // You can modify this to show a header if desired
-      />
-      {/* Add LostScreen to the navigator */}
-      <Stack.Screen
-        name="LostScreen"
-        component={LostScreen}
-        options={{ headerShown: false }}  // Hide the header
-      />
-    </Stack.Navigator>
-  );
+    return (
+        <Stack.Navigator initialRouteName="PhotoEscapeReady">
+            <Stack.Screen
+                name="PhotoEscapeReady"
+                component={PhotoEscapeReadyScreen}
+                initialParams={{ pin, name, selfieURL }} // Pass pin, name, and selfieURL
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="PhotoEscapeLimerick"
+                component={PhotoEscapeLimerickScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="PhotoEscapeCamera"
+                component={PhotoEscapeCameraScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="PhotoEscapeResult"
+                component={PhotoEscapeResultScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="CongratulationsScreen"
+                component={CongratulationsScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name="LostScreen"
+                component={LostScreen}
+                options={{ headerShown: false }}
+            />
+        </Stack.Navigator>
+    );
 };
 
 export default PhotoEscapeNavigator;

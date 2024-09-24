@@ -1,19 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera'; // Adjusted import to match your usage
+import { CameraView, useCameraPermissions } from 'expo-camera'; // Importing CameraView and useCameraPermissions
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
 
 const SelfieScreen = () => {
     const [permission, requestPermission] = useCameraPermissions();
     const [photo, setPhoto] = useState(null);
-    const [cameraType, setCameraType] = useState('front'); // Default to front camera
+    const [cameraType, setCameraType] = useState('front'); // Set default camera to front
     const cameraRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
     const { params } = useRoute();
-    const name = params?.name; // Get the user's name passed from WelcomeScreen
+    const name = params?.name; // Get the user's name from route parameters
 
+    // Request camera permissions on component mount
     useEffect(() => {
         if (!permission) {
             requestPermission();
@@ -37,16 +38,22 @@ const SelfieScreen = () => {
         try {
             const response = await fetch(photo);
             const blob = await response.blob();
-            const timestamp = new Date().getTime();
+            const timestamp = new Date().getTime(); // Generate a timestamp
             const selfieRef = firebase.database().ref(`users/${name}/selfie_${timestamp}`);
             const storageRef = firebase.storage().ref().child(`selfies/${name}_${timestamp}.jpg`);
 
+            // Upload the image to Firebase Storage
             const snapshot = await storageRef.put(blob);
             const downloadURL = await snapshot.ref.getDownloadURL();
+
+            // Save the URL to Firebase Realtime Database
             await selfieRef.set(downloadURL);
 
             Alert.alert('Success', 'Selfie uploaded successfully!');
-            navigation.replace('NextScreen'); // Replace 'NextScreen' with your desired next screen
+
+            // Navigate to HomeScreen with the user's name and selfie URL
+            navigation.replace('Home', { name, imageUrl: downloadURL });
+
         } catch (error) {
             console.error('Error uploading selfie:', error);
             Alert.alert('Error', 'Failed to upload selfie. Please try again.');
@@ -59,6 +66,7 @@ const SelfieScreen = () => {
         setPhoto(null);
     };
 
+    // Check for camera permissions status
     if (!permission || permission.status === 'undetermined') {
         return <View><Text>Requesting camera permissions...</Text></View>;
     }
@@ -72,11 +80,11 @@ const SelfieScreen = () => {
                 <CameraView
                     ref={cameraRef}
                     style={styles.camera}
-                    facing={cameraType} // Use facing prop for front camera
+                    facing={cameraType} // Set the camera to front-facing
                 >
                     <View style={styles.cameraOverlay}>
                         <TouchableOpacity style={styles.captureButton} onPress={takeSelfie}>
-                            <Text style={styles.captureButtonText}>Capture</Text>
+                            <Text style={styles.captureButtonText}>Take Selfie</Text>
                         </TouchableOpacity>
                     </View>
                 </CameraView>

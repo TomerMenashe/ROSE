@@ -10,7 +10,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SplashScreenComponent from './src/screens/SplashScreen';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import SelfieScreen from './src/screens/SelfieScreen';
-import SignUpScreen from './src/screens/SignUpScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import JoinGameScreen from './src/screens/JoinGameScreen';
 import CreateGameScreen from './src/screens/CreateGameScreen';

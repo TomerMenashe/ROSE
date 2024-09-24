@@ -7,10 +7,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 const CongratulationsScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { itemName, winnerImage } = route.params;  // Get the item name and winner's image URL
+    const { itemName, winnerImage, name, selfieURL } = route.params;
 
     const moveToNextGame = () => {
-        navigation.navigate('TestFaceSwap');  // Navigate to the next game screen
+        navigation.navigate('TestFaceSwap', { name, selfieURL });
     };
 
     return (
@@ -18,7 +18,6 @@ const CongratulationsScreen = () => {
             <Text style={styles.congratsText}>🎉 Congratulations!</Text>
             <Text style={styles.text}>You successfully found the {itemName}!</Text>
 
-            {/* Display the winner's image */}
             {winnerImage && <Image source={{ uri: winnerImage }} style={styles.winnerImage} />}
 
             <TouchableOpacity style={styles.button} onPress={moveToNextGame}>

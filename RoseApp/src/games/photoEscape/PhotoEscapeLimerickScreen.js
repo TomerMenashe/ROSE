@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { Alert, Text, View, StyleSheet, ActivityIndicator, ImageBackground, TouchableOpacity } from "react-native";
 import { firebase } from "../../firebase/firebase";
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-const PhotoEscapeLimerickScreen = ({ route }) => {
+const PhotoEscapeLimerickScreen = () => {
     const navigation = useNavigation();
-    const { pin, gameNumber = 1 } = route.params;
+    const route = useRoute();
+    const { pin, gameNumber = 1, name, selfieURL } = route.params || {};
     const [limerickResponse, setLimerickResponse] = useState('');
     const [loading, setLoading] = useState(false);
     const [itemName, setItemName] = useState('');
@@ -18,7 +19,6 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
         const fetchItemAndLimerick = async () => {
             setLoading(true);
             try {
-                // Fetch item and limerick from Firebase
                 const itemSnapshot = await roomRef.child('item').once('value');
                 const limerickSnapshot = await roomRef.child('limerick').once('value');
 
@@ -38,11 +38,10 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
 
         fetchItemAndLimerick();
 
-        // Listen for winner announcement
         const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const winnerData = snapshot.val();
-                navigation.navigate('CongratulationsScreen', { itemName, winnerImage: winnerData.image });
+                navigation.navigate('CongratulationsScreen', { itemName, winnerImage: winnerData.image, name, selfieURL });
             }
         });
 
@@ -50,7 +49,7 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
     }, [pin, navigation]);
 
     const startSearch = () => {
-        navigation.navigate('PhotoEscapeCamera', { pin, gameNumber, itemName });
+        navigation.navigate('PhotoEscapeCamera', { pin, gameNumber, itemName, name, selfieURL });
     };
 
     return (
@@ -80,7 +79,6 @@ const PhotoEscapeLimerickScreen = ({ route }) => {
     );
 };
 
-// Styles remain the same as before
 const styles = StyleSheet.create({
     background: {
         flex: 1,

@@ -1,12 +1,16 @@
+// /src/screens/LostScreen.js
+
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 const LostScreen = () => {
     const navigation = useNavigation();
+    const route = useRoute();
+    const { name, selfieURL } = route.params;
 
     const handleBackToHome = () => {
-        navigation.navigate('TestFaceSwap'); // Navigate to the Home screen or main screen
+        navigation.navigate('TestFaceSwap', { name, selfieURL });
     };
 
     return (
