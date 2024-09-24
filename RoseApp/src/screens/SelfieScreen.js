@@ -46,7 +46,7 @@ const SelfieScreen = () => {
             await selfieRef.set(downloadURL);
 
             Alert.alert('Success', 'Selfie uploaded successfully!');
-            navigation.replace('NextScreen'); // Replace 'NextScreen' with your desired next screen
+            navigation.replace('CreateGameScreen'); // Replace 'NextScreen' with your desired next screen
         } catch (error) {
             console.error('Error uploading selfie:', error);
             Alert.alert('Error', 'Failed to upload selfie. Please try again.');
