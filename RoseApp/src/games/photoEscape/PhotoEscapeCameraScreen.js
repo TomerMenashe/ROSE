@@ -38,12 +38,24 @@ const PhotoEscapeCameraScreen = () => {
         const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const winnerData = snapshot.val();
-                navigation.navigate('CongratulationsScreen', {
-                    itemName,
-                    winnerImage: winnerData.image,
-                    name,
-                    selfieURL,
-                });
+                const winnerName = winnerData.name; // Ensure 'name' is stored in winnerData
+                const winnerImage = winnerData.image;
+
+                if (winnerName === name) {
+                    navigation.navigate('CongratulationsScreen', {
+                        itemName,
+                        winnerImage: winnerImage,
+                        name,
+                        selfieURL,
+                    });
+                } else {
+                    navigation.navigate('LoserScreen', {
+                        itemName,
+                        winnerImage: winnerImage,
+                        name,
+                        selfieURL,
+                    });
+                }
             }
         });
 
@@ -105,17 +117,12 @@ const PhotoEscapeCameraScreen = () => {
 
             if (isPresent) {
                 await roomRef.child('winner').set({ image: photoUrl, name, selfieURL });
-                navigation.navigate('CongratulationsScreen', {
-                    itemName,
-                    winnerImage: photoUrl,
-                    name,
-                    selfieURL,
-                });
+                // Navigation handled by listener
             } else {
                 setWrongObject(true);
                 setPhoto(null);
                 setLoading(false);
-                Alert.alert('Wrong Object', `The desired item was not found in the image. Please try again.`);
+                Alert.alert('Wrong Object', `The ${itemName} was not found in the image. Please try again.`);
             }
         } catch (error) {
             console.error('Error checking item in image:', error);

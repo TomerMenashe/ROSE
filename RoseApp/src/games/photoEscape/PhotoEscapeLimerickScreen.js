@@ -41,12 +41,29 @@ const PhotoEscapeLimerickScreen = () => {
         const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const winnerData = snapshot.val();
-                navigation.navigate('CongratulationsScreen', { itemName, winnerImage: winnerData.image, name, selfieURL });
+                const winnerName = winnerData.name;
+                const winnerImage = winnerData.image;
+
+                if (winnerName === name) {
+                    navigation.navigate('CongratulationsScreen', {
+                        itemName,
+                        winnerImage: winnerImage,
+                        name,
+                        selfieURL,
+                    });
+                } else {
+                    navigation.navigate('LoserScreen', {
+                        itemName,
+                        winnerImage: winnerImage,
+                        name,
+                        selfieURL,
+                    });
+                }
             }
         });
 
         return () => roomRef.child('winner').off('value', winnerListener);
-    }, [pin, navigation]);
+    }, [pin, navigation, name, selfieURL, itemName]);
 
     const startSearch = () => {
         navigation.navigate('PhotoEscapeCamera', { pin, gameNumber, itemName, name, selfieURL });
@@ -96,7 +113,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#FFFFFF',
         marginBottom: 20,
-        textAlign: 'center',
     },
     limerickText: {
         fontSize: 24,
