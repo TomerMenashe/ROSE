@@ -52,20 +52,10 @@ const SelfieScreen = () => {
             const { response } = result.data;
 
             if (response.toLowerCase().trim() === 'yes') {
-                // Selfie is valid
-                Alert.alert(
-                    'Success',
-                    'Selfie taken successfully! You look pretty.',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => uploadSelfie(),
-                        },
-                    ],
-                    { cancelable: false }
-                );
+                // Selfie is valid, proceed to upload without an initial alert
+                await uploadSelfie();
             } else {
-                // Selfie is invalid
+                // Selfie is invalid, show the sarcastic comment from ChatGPT
                 Alert.alert(
                     'Invalid Selfie',
                     response, // Sarcastic comment from ChatGPT
@@ -102,8 +92,18 @@ const SelfieScreen = () => {
             // Save the download URL to Firebase Database
             await selfieRef.set(downloadURL);
 
-            Alert.alert('Success', 'Selfie uploaded successfully!');
-            navigation.replace('Home', { name, imageUrl: downloadURL });
+            // Show a single success alert after uploading
+            Alert.alert(
+                'Success',
+                'Selfie is valid! You look pretty.',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => navigation.replace('Home', { name, imageUrl: downloadURL }),
+                    },
+                ],
+                { cancelable: false }
+            );
         } catch (error) {
             console.error('Error uploading selfie:', error);
             Alert.alert('Error', 'Failed to upload selfie. Please try again.');
