@@ -1,5 +1,3 @@
-// /src/screens/PhotoEscapeReadyScreen.js
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, ImageBackground, StyleSheet, Dimensions, Modal } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -72,8 +70,8 @@ const PhotoEscapeReadyScreen = () => {
               <Text style={styles.waitingText}>Waiting for other players to be ready...</Text>
           )}
 
-          <Pressable style={styles.questionMark} onPress={toggleModal}>
-            <Text style={styles.questionMarkText}>?</Text>
+          <Pressable style={styles.howToPlayContainer} onPress={toggleModal}>
+            <Text style={styles.howToPlayText}>How to play?</Text>
           </Pressable>
 
           <Modal
@@ -139,20 +137,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 20,
   },
-  questionMark: {
-    position: 'absolute',
-    bottom: 30,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-    padding: 10,
-    borderRadius: 25,
-    width: 50,
-    height: 50,
-    justifyContent: 'center',
+  howToPlayContainer: {
+    position: 'absolute',  // Positioning the text at the bottom
+    bottom: 20,  // Move it close to the bottom of the screen
     alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',  // Make sure the text is centered horizontally
   },
-  questionMarkText: {
-    color: '#FFFFFF',
-    fontSize: 24,
+  howToPlayText: {
+    fontSize: 18,
+    color: '#FF4B4B',  // Red color for the clickable "How to play?" text
+    textDecorationLine: 'underline',
     fontWeight: 'bold',
   },
   modalOverlay: {
