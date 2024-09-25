@@ -1,34 +1,26 @@
 // /src/screens/HomeScreen.js
 
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ImageBackground, Pressable, Dimensions, ScrollView, Image } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, Dimensions, Pressable, ImageBackground, ScrollView, SafeAreaView } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 
-const { height, width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation, route }) => {
-  const { name, imageUrl } = route.params || {}; // Access name and imageUrl from route params
+  const { name, imageUrl } = route.params || {};
 
-  // Initialize shared values for each letter's opacity
   const fadeAnim1 = useSharedValue(0);
   const fadeAnim2 = useSharedValue(0);
   const fadeAnim3 = useSharedValue(0);
   const fadeAnim4 = useSharedValue(0);
   const fadeAnim5 = useSharedValue(0);
 
-  // Define animated styles for each letter
   const animatedStyle1 = useAnimatedStyle(() => ({ opacity: fadeAnim1.value }));
   const animatedStyle2 = useAnimatedStyle(() => ({ opacity: fadeAnim2.value }));
   const animatedStyle3 = useAnimatedStyle(() => ({ opacity: fadeAnim3.value }));
   const animatedStyle4 = useAnimatedStyle(() => ({ opacity: fadeAnim4.value }));
   const animatedStyle5 = useAnimatedStyle(() => ({ opacity: fadeAnim5.value }));
 
-  // Animate the letters when the user is set
   useEffect(() => {
     if (name) {
       fadeAnim1.value = withTiming(1, { duration: 500 }, () => {
@@ -48,10 +40,11 @@ const HomeScreen = ({ navigation, route }) => {
   }
 
   return (
+    <SafeAreaView style={styles.safeArea}>
       <ImageBackground
-          source={require('../../assets/createGameBack.jpeg')}
-          style={styles.background}
-          resizeMode="cover"
+        source={require('../../assets/createGameBack.jpeg')}
+        style={styles.background}
+        resizeMode="cover"
       >
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {/* Display the user's name with animated letters */}
@@ -72,7 +65,7 @@ const HomeScreen = ({ navigation, route }) => {
 
           {/* Display the uploaded selfie image */}
           {imageUrl && (
-              <Image source={{ uri: imageUrl }} style={styles.selfieImage} />
+            <Image source={{ uri: imageUrl }} style={styles.selfieImage} />
           )}
 
           <View style={styles.greetingContainer}>
@@ -83,107 +76,100 @@ const HomeScreen = ({ navigation, route }) => {
 
           {/* Create Game Button */}
           <Pressable
-              style={styles.button}
-              onPress={() => navigation.navigate('CreateGame', { name, imageUrl })}
+            style={styles.button}
+            onPress={() => navigation.navigate('CreateGame', { name, imageUrl })}
           >
             <Text style={styles.buttonText}>Create Game</Text>
           </Pressable>
 
           {/* Join Game Button */}
           <Pressable
-              style={styles.button}
-              onPress={() => navigation.navigate('JoinGame', { name, imageUrl })}
+            style={styles.button}
+            onPress={() => navigation.navigate('JoinGame', { name, imageUrl })}
           >
             <Text style={styles.buttonText}>Join Game</Text>
           </Pressable>
         </ScrollView>
-
-        {/* Settings Button */}
-        <Pressable
-            style={styles.settingsButton}
-            onPress={() => navigation.navigate('Settings')}
-        >
-          <Text style={styles.settingsText}>⚙️</Text>
-        </Pressable>
       </ImageBackground>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  background: { flex: 1 },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#000', // Ensure the background color covers the safe area
+  },
+  background: { 
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    paddingVertical: height * 0.05, // 5% of screen height for top and bottom padding
+    paddingHorizontal: width * 0.05, // 5% of screen width for left and right padding
   },
   adminContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 90,
-    marginTop: -100,
+    // Removed absolute positioning and negative margins for responsiveness
+    marginBottom: height * 0.02, // 2% of screen height
   },
   adminText: {
-    fontSize: 34,
+    fontSize: Math.min(width, height) * 0.08, // 8% of the smaller screen dimension
     fontWeight: 'bold',
     fontFamily: 'Doodle-Font',
     color: '#FFFFFF',
+    marginHorizontal: 2,
   },
   greetingContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 150,
+    marginBottom: height * 0.05, // 5% of screen height
   },
   greeting: {
-    fontSize: 27,
+    fontSize: Math.min(width, height) * 0.05, // 5% of the smaller screen dimension
     fontFamily: 'Doodle-Font',
     color: '#FFFFFF',
+    textAlign: 'center',
   },
   selfieImage: {
-    width: 150, // Adjusted to make it circular
-    height: 150, // Adjusted to make it circular
-    borderRadius: 75, // Half of width and height
-    borderColor: '#FF0000', // Red border color
-    borderWidth: 4, // Thicker border for glow effect
+    width: Math.min(width, height) * 0.4, // 40% of the smaller screen dimension
+    height: Math.min(width, height) * 0.4,
+    borderRadius: Math.min(width, height) * 0.2,
+    borderColor: '#FF0000',
+    borderWidth: 4,
     shadowColor: '#FF0000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 20,
-    elevation: 10, // For Android shadow
-    marginVertical: 20,
+    elevation: 10,
+    marginVertical: height * 0.03, // 3% of screen height
   },
   button: {
-    backgroundColor: '#FF4B4B',
-    paddingVertical: 20,
+    backgroundColor: '#FF0000', // Bright red color
+    paddingVertical: height * 0.02, // 2% of screen height
     borderRadius: 20,
-    marginBottom: 40,
+    marginBottom: height * 0.03, // 3% of screen height
     width: width * 0.8,
-    height: height * 0.08,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#FF0000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
     shadowRadius: 10,
-    elevation: 5, // For Android shadow
+    elevation: 5,
   },
-  buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
-  settingsButton: {
-    position: 'absolute',
-    bottom: 50,
-    right: 20,
-    backgroundColor: '#FF4B4B',
-    padding: 10,
-    borderRadius: 35, // To make it circular
-    shadowColor: '#FF0000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 10,
-    elevation: 5, // For Android shadow
+  buttonText: { 
+    color: '#FFFFFF', 
+    fontSize: Math.min(width, height) * 0.04, // 4% of the smaller screen dimension
+    fontWeight: 'bold' 
   },
-  settingsText: { fontSize: 24, color: '#FFFFFF' },
 });
 
 export default HomeScreen;
