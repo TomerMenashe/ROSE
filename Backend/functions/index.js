@@ -199,6 +199,33 @@ exports.isItemInImage = functions.https.onCall(async (data, _context) => {
   }
 });
 
+exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
+  try {
+    const {image} = data;
+
+    if (!image) {
+      throw new functions.https.HttpsError("invalid-argument", "Image is required.");
+    }
+    const prompt = `If this image is a selfie where you can see my face clearly, respond only with the word: yes.
+    if not, respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie. 
+    make it funny and sarcastic, and in a length suited for a pop up message on a mobile phone.`;
+
+    const imgBuffer = Buffer.from(image, "base64");
+    const response = await generateResponse(
+        "gpt-4o",
+        0.7,
+        "text",
+        prompt,
+        imgBuffer,
+        100,
+    );
+    return {response};
+  } catch (error) {
+    console.error(error);
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});
+
 // eslint-disable-next-line no-unused-vars
 exports.testGenerateResponse = functions.https.onCall(async (_data, _context) => {
   try {
