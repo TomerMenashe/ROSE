@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ActivityIndicator } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
+import * as FileSystem from 'expo-file-system'; // Import FileSystem for base64 conversion
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,9 +27,14 @@ const SelfieScreen = () => {
 
     const takeSelfie = async () => {
         if (cameraRef.current) {
-            const options = { quality: 0.5, base64: true };
-            const data = await cameraRef.current.takePictureAsync(options);
-            setPhoto(data.uri);
+            try {
+                const options = { quality: 0.5, base64: true };
+                const data = await cameraRef.current.takePictureAsync(options);
+                setPhoto(data.uri);
+            } catch (error) {
+                console.error('Error taking selfie:', error);
+                Alert.alert('Error', 'Failed to take selfie. Please try again.');
+            }
         }
     };
 
@@ -37,15 +43,63 @@ const SelfieScreen = () => {
         setLoading(true);
 
         try {
+            // Convert photo URI to base64
+            const base64Image = await FileSystem.readAsStringAsync(photo, { encoding: 'base64' });
+
+            // Call the isValidSelfie backend function
+            const isValidSelfie = firebase.functions().httpsCallable('isValidSelfie');
+            const result = await isValidSelfie({ image: base64Image });
+            const { response } = result.data;
+
+            if (response.toLowerCase().trim() === 'yes') {
+                // Selfie is valid
+                Alert.alert(
+                    'Success',
+                    'Selfie taken successfully! You look pretty.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => uploadSelfie(),
+                        },
+                    ],
+                    { cancelable: false }
+                );
+            } else {
+                // Selfie is invalid
+                Alert.alert(
+                    'Invalid Selfie',
+                    response, // Sarcastic comment from ChatGPT
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => resetSelfie(),
+                        },
+                    ],
+                    { cancelable: false }
+                );
+            }
+        } catch (error) {
+            console.error('Error validating selfie:', error);
+            Alert.alert('Error', 'Failed to validate selfie. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const uploadSelfie = async () => {
+        setLoading(true);
+        try {
             const response = await fetch(photo);
             const blob = await response.blob();
             const timestamp = new Date().getTime();
             const selfieRef = firebase.database().ref(`users/${name}/selfie_${timestamp}`);
             const storageRef = firebase.storage().ref().child(`selfies/${name}_${timestamp}.jpg`);
 
+            // Upload the selfie to Firebase Storage
             const snapshot = await storageRef.put(blob);
             const downloadURL = await snapshot.ref.getDownloadURL();
 
+            // Save the download URL to Firebase Database
             await selfieRef.set(downloadURL);
 
             Alert.alert('Success', 'Selfie uploaded successfully!');
@@ -63,10 +117,23 @@ const SelfieScreen = () => {
     };
 
     if (!permission || permission.status === 'undetermined') {
-        return <View><Text>Requesting camera permissions...</Text></View>;
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF0000" />
+                <Text style={styles.loadingText}>Requesting camera permissions...</Text>
+            </View>
+        );
     }
+
     if (!permission.granted) {
-        return <View><Text>No access to camera</Text></View>;
+        return (
+            <View style={styles.permissionContainer}>
+                <Text style={styles.permissionText}>No access to camera</Text>
+                <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
+                    <Text style={styles.permissionButtonText}>Grant Permission</Text>
+                </TouchableOpacity>
+            </View>
+        );
     }
 
     return (
@@ -99,7 +166,8 @@ const SelfieScreen = () => {
                     )}
                     {loading && (
                         <View style={styles.loadingContainer}>
-                            <Text style={styles.loadingText}>Uploading your selfie...</Text>
+                            <ActivityIndicator size="large" color="#FF0000" />
+                            <Text style={styles.loadingText}>Processing...</Text>
                         </View>
                     )}
                 </View>
@@ -115,6 +183,38 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#101010',
         padding: 20,
+    },
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: '#101010',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        marginTop: 10,
+    },
+    permissionContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#101010',
+    },
+    permissionText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        marginBottom: 20,
+    },
+    permissionButton: {
+        backgroundColor: '#FF0000',
+        padding: 10,
+        borderRadius: 10,
+    },
+    permissionButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
     cameraContainer: {
         width: width * 0.7, // Increased size from 0.6 to 0.7
@@ -190,15 +290,6 @@ const styles = StyleSheet.create({
     buttonRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-    },
-    loadingContainer: {
-        marginTop: 20,
-        alignItems: 'center',
-    },
-    loadingText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        marginTop: 10,
     },
 });
 
