@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Pressable, Text } from 'react-native';
+import { View, StyleSheet, Pressable, Text, Dimensions } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -9,18 +9,20 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Font from 'expo-font'; // Import for loading fonts
 
-const AboutPage = ({ navigation }) => {
+const { width, height } = Dimensions.get('window');
+
+const AboutScreen = ({ navigation }) => {
   // Phrases to display in a typing effect
   const phrases = [
-    "Welcome to Rose",
-    "where love blossoms beyond the ordinary.",
-    "Say goodbye to the usual dating games and dive into a world of romance and mystery.",
-    "Our mini-games, powered by AI, spark creativity, love, and laughter - bringing excitement into every step.",
-    "We use technology to bring back human connection.",
-    "Will you dare to play?"
+    'Welcome to Rose',
+    'where love blossoms beyond the ordinary.',
+    'Say goodbye to the usual dating games and dive into a world of romance and mystery.',
+    'Our mini-games, powered by AI, spark creativity, love, and laughter - bringing excitement into every step.',
+    'We use technology to bring back human connection.',
+    'Will you dare to play?',
   ];
 
-  const animationDuration = 3000; // Animation duration for each phrase
+  const animationDuration = 3000; // Animation duration for each phrase in milliseconds
   const phraseTimings = phrases.map((_, i) => i * 4000); // Staggered phrase appearance
 
   // Shared values for each phrase's opacity and scale
@@ -76,7 +78,10 @@ const AboutPage = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.textContainer}>
         {phrases.map((phrase, phraseIndex) => (
-          <Animated.View key={phraseIndex} style={[styles.phraseContainer, getAnimatedStyle(phraseIndex)]}>
+          <Animated.View
+            key={phraseIndex}
+            style={[styles.phraseContainer, getAnimatedStyle(phraseIndex)]}
+          >
             <Animated.Text style={styles.phrase}>{phrase}</Animated.Text>
           </Animated.View>
         ))}
@@ -96,23 +101,23 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000', // Black background
     justifyContent: 'center', // Center vertically
     alignItems: 'center',
-    paddingHorizontal: 20, // Add padding to avoid text touching the screen edges
+    paddingHorizontal: width * 0.05, // 5% of screen width
   },
   textContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%', // Ensure text container uses full screen width
+    width: '100%', // Full width
   },
   phraseContainer: {
-    marginVertical: 15, // Add margin between phrases for spacing
-    width: '100%', // Ensure the phrases take up full width of the container
+    marginVertical: height * 0.015, // 1.5% of screen height
+    width: '100%', // Full width
     alignItems: 'center',
   },
   phrase: {
-    fontSize: 32, // Larger font size for more emphasis
+    fontSize: width * 0.08, // 8% of screen width
     color: '#FF0000', // Red neon color
     fontFamily: 'Neon-Glow', // Custom font
-    textAlign: 'center', // Center-align text to prevent breaking in strange places
+    textAlign: 'center', // Center-align text
     // Multiple shadow layers for intense neon glow effect
     textShadowColor: '#FF0000',
     textShadowOffset: { width: 0, height: 0 },
@@ -124,10 +129,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#FF0000', // Red button background
-    paddingVertical: 15,
-    paddingHorizontal: 50,
-    borderRadius: 25,
-    marginTop: 40, // Spacing from the bottom of the phrases
+    paddingVertical: height * 0.02, // 2% of screen height
+    paddingHorizontal: width * 0.12, // 12% of screen width
+    borderRadius: width * 0.03, // 3% of screen width
+    marginTop: height * 0.05, // 5% of screen height
     shadowColor: '#FF4500',
     shadowRadius: 20,
     shadowOpacity: 1,
@@ -135,7 +140,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#FFFFFF',
-    fontSize: 22,
+    fontSize: width * 0.05, // 5% of screen width
     fontFamily: 'Neon-Glow', // Use the same neon font for the button
     textShadowColor: '#FF4500',
     textShadowOffset: { width: 0, height: 0 },
@@ -143,4 +148,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AboutPage;
+export default AboutScreen;

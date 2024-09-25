@@ -6,7 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Import screens
 import SplashScreenComponent from './src/screens/SplashScreen';
-import AboutPage from './src/screens/AboutPage';  // Import the About Page
+import AboutScreen from './src/screens/AboutScreen';  // Import the About Page
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import SelfieScreen from './src/screens/SelfieScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -61,7 +61,7 @@ export default function App() {
         />
         <MainStack.Screen
           name="About"
-          component={AboutPage} // Add the AboutPage here
+          component={AboutScreen} 
           options={{ headerShown: false }}
         />
         <MainStack.Screen
