@@ -1,20 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera'; // Importing CameraView and useCameraPermissions
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions } from 'react-native';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
+
+const { width, height } = Dimensions.get('window');
 
 const SelfieScreen = () => {
     const [permission, requestPermission] = useCameraPermissions();
     const [photo, setPhoto] = useState(null);
-    const [cameraType, setCameraType] = useState('front'); // Set default camera to front
+    const [cameraType, setCameraType] = useState('front');
     const cameraRef = useRef(null);
     const [loading, setLoading] = useState(false);
     const navigation = useNavigation();
     const { params } = useRoute();
-    const name = params?.name; // Get the user's name from route parameters
+    const name = params?.name;
 
-    // Request camera permissions on component mount
     useEffect(() => {
         if (!permission) {
             requestPermission();
@@ -38,22 +39,17 @@ const SelfieScreen = () => {
         try {
             const response = await fetch(photo);
             const blob = await response.blob();
-            const timestamp = new Date().getTime(); // Generate a timestamp
+            const timestamp = new Date().getTime();
             const selfieRef = firebase.database().ref(`users/${name}/selfie_${timestamp}`);
             const storageRef = firebase.storage().ref().child(`selfies/${name}_${timestamp}.jpg`);
 
-            // Upload the image to Firebase Storage
             const snapshot = await storageRef.put(blob);
             const downloadURL = await snapshot.ref.getDownloadURL();
 
-            // Save the URL to Firebase Realtime Database
             await selfieRef.set(downloadURL);
 
             Alert.alert('Success', 'Selfie uploaded successfully!');
-
-            // Navigate to HomeScreen with the user's name and selfie URL
             navigation.replace('Home', { name, imageUrl: downloadURL });
-
         } catch (error) {
             console.error('Error uploading selfie:', error);
             Alert.alert('Error', 'Failed to upload selfie. Please try again.');
@@ -66,7 +62,6 @@ const SelfieScreen = () => {
         setPhoto(null);
     };
 
-    // Check for camera permissions status
     if (!permission || permission.status === 'undetermined') {
         return <View><Text>Requesting camera permissions...</Text></View>;
     }
@@ -77,22 +72,23 @@ const SelfieScreen = () => {
     return (
         <View style={styles.container}>
             {!photo ? (
-                <CameraView
-                    ref={cameraRef}
-                    style={styles.camera}
-                    facing={cameraType} // Set the camera to front-facing
-                >
-                    <View style={styles.cameraOverlay}>
-                        <TouchableOpacity style={styles.captureButton} onPress={takeSelfie}>
-                            <Text style={styles.captureButtonText}>Take Selfie</Text>
-                        </TouchableOpacity>
+                <>
+                    <View style={styles.cameraContainer}>
+                        <CameraView
+                            ref={cameraRef}
+                            style={styles.camera}
+                            facing={cameraType}
+                        />
                     </View>
-                </CameraView>
+                    <TouchableOpacity style={styles.captureButton} onPress={takeSelfie}>
+                        <Text style={styles.captureButtonText}>Take Selfie</Text>
+                    </TouchableOpacity>
+                </>
             ) : (
-                <View>
+                <View style={styles.photoContainer}>
                     <Image source={{ uri: photo }} style={styles.capturedPhoto} />
                     {!loading && (
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View style={styles.buttonRow}>
                             <TouchableOpacity style={styles.redButton} onPress={resetSelfie}>
                                 <Text style={styles.buttonText}>Retake</Text>
                             </TouchableOpacity>
@@ -101,7 +97,6 @@ const SelfieScreen = () => {
                             </TouchableOpacity>
                         </View>
                     )}
-
                     {loading && (
                         <View style={styles.loadingContainer}>
                             <Text style={styles.loadingText}>Uploading your selfie...</Text>
@@ -119,55 +114,82 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#101010',
+        padding: 20,
+    },
+    cameraContainer: {
+        width: width * 0.7, // Increased size from 0.6 to 0.7
+        height: width * 0.7, // Ensuring the camera preview is square
+        borderRadius: (width * 0.7) / 2, // Making it circular
+        overflow: 'hidden',
+        borderColor: '#FF0000', // Red border color
+        borderWidth: 4, // Thicker border for glow effect
+        shadowColor: '#FF0000',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 20,
+        elevation: 10, // For Android shadow
+        marginBottom: 30, // Space between camera and button
     },
     camera: {
-        width: '90%',
-        height: '60%',
-        borderRadius: 10,
-        overflow: 'hidden',
-        borderColor: '#FFFFFF',
-        borderWidth: 2,
-    },
-    cameraOverlay: {
-        flex: 1,
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        paddingBottom: 20,
+        width: '100%',
+        height: '100%',
     },
     captureButton: {
-        width: 120,
+        width: 150, // Increased width for better tap area
         height: 50,
         backgroundColor: '#FF4B4B',
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
+        shadowColor: '#FF0000',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.7,
+        shadowRadius: 10,
+        elevation: 5, // For Android shadow
     },
     captureButtonText: {
         color: '#fff',
         fontSize: 18,
         fontWeight: 'bold',
     },
+    photoContainer: {
+        alignItems: 'center',
+    },
     capturedPhoto: {
-        width: 300,
-        height: 400,
+        width: 250, // Increased size from 200 to 250
+        height: 250, // Making the captured photo circular
+        borderRadius: 125, // Half of width and height
+        borderColor: '#FF0000', // Red border color
+        borderWidth: 4,
+        shadowColor: '#FF0000',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.8,
+        shadowRadius: 20,
+        elevation: 10, // For Android shadow
         marginVertical: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: '#FFCC00',
     },
     redButton: {
-        backgroundColor: '#FF4B4B',
-        padding: 10,
+        backgroundColor: '#FF0000', // Red button background
+        padding: 12,
         borderRadius: 10,
         marginRight: 10,
         marginLeft: 10,
-        width: 120,
+        width: 130,
         alignItems: 'center',
+        shadowColor: '#FF0000',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.7,
+        shadowRadius: 10,
+        elevation: 5, // For Android shadow
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    buttonRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
     },
     loadingContainer: {
         marginTop: 20,

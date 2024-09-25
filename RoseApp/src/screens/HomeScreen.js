@@ -142,12 +142,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   selfieImage: {
-    width: 200,
-    height: 300,
+    width: 150, // Adjusted to make it circular
+    height: 150, // Adjusted to make it circular
+    borderRadius: 75, // Half of width and height
+    borderColor: '#FF0000', // Red border color
+    borderWidth: 4, // Thicker border for glow effect
+    shadowColor: '#FF0000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 20,
+    elevation: 10, // For Android shadow
     marginVertical: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#FFCC00',
   },
   button: {
     backgroundColor: '#FF4B4B',
@@ -158,6 +163,11 @@ const styles = StyleSheet.create({
     height: height * 0.08,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#FF0000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    elevation: 5, // For Android shadow
   },
   buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
   settingsButton: {
@@ -166,7 +176,12 @@ const styles = StyleSheet.create({
     right: 20,
     backgroundColor: '#FF4B4B',
     padding: 10,
-    borderRadius: 70,
+    borderRadius: 35, // To make it circular
+    shadowColor: '#FF0000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    elevation: 5, // For Android shadow
   },
   settingsText: { fontSize: 24, color: '#FFFFFF' },
 });
