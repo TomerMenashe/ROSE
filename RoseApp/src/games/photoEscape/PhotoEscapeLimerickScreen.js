@@ -1,5 +1,3 @@
-// /src/screens/PhotoEscapeLimerickScreen.js
-
 import React, { useState, useEffect } from "react";
 import {
     Alert,
@@ -126,11 +124,15 @@ const PhotoEscapeLimerickScreen = () => {
                 )}
 
                 <Text style={styles.header}>Find the Object</Text>
+
                 {loading ? (
                     <ActivityIndicator size="large" color="#FFFFFF" />
                 ) : (
                     <>
-                        <Text style={styles.limerickText}>{limerickResponse}</Text>
+                        {/* Flashcard-style container for the limerick */}
+                        <View style={styles.flashCard}>
+                            <Text style={styles.limerickText}>{limerickResponse}</Text>
+                        </View>
                     </>
                 )}
 
@@ -144,6 +146,7 @@ const PhotoEscapeLimerickScreen = () => {
         </ImageBackground>
     );
 };
+
 const styles = StyleSheet.create({
     background: {
         flex: 1,
@@ -162,14 +165,25 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         marginBottom: 20,
     },
+    flashCard: {
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',  // Slight transparency for elegance
+        padding: 20,
+        borderRadius: 15,  // Rounded corners for the card
+        shadowColor: '#000',  // Subtle shadow for a card effect
+        shadowOffset: { width: 0, height: 5 },
+        shadowOpacity: 0.25,
+        shadowRadius: 10,
+        elevation: 5,  // Shadow effect for Android
+        marginBottom: 30,  // Space below the card
+        width: '90%',  // Take up most of the width of the screen
+        alignItems: 'center',
+    },
     limerickText: {
-        fontSize: 24,
-        color: '#FFFFFF',
+        fontSize: 20,  // Make the limerick text larger for readability
+        color: '#333333',  // Dark text for better readability on the light background
         textAlign: 'center',
-        marginBottom: 30,
-        paddingHorizontal: 20,
-        fontStyle: 'italic',
-        lineHeight: 34,
+        fontStyle: 'italic',  // Italic styling to enhance the professional look
+        lineHeight: 30,  // Increase line height for better readability
     },
     searchButtonContainer: {
         alignItems: 'center',
@@ -216,6 +230,5 @@ const styles = StyleSheet.create({
         marginTop: 5,
     },
 });
-
 
 export default PhotoEscapeLimerickScreen;
