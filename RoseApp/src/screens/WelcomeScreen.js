@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   input: {
     width: '100%',
     height: 50,
-    borderColor: '#FF4B4B',
+    borderColor: '#FF0000',
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
@@ -93,7 +93,12 @@ const styles = StyleSheet.create({
   },
   proceedButton: {
     width: '100%',
-    backgroundColor: '#D50000', // Deep red lipstick color
+    backgroundColor: '#FF0000', 
+    shadowColor: '#FF0000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    elevation: 5,
     background: 'linear-gradient(145deg, #FF0000, #D50000)', // Rich red gradient
     paddingVertical: 15,
     borderRadius: 10,

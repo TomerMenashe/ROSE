@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     captureButton: {
         width: 150, // Increased width for better tap area
         height: 50,
-        backgroundColor: '#FF4B4B',
+        backgroundColor: '#FF0000', // Changed to bright red
         borderRadius: 25,
         justifyContent: 'center',
         alignItems: 'center',
