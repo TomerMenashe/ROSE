@@ -1,263 +1,285 @@
 // /src/screens/FaceSwap.js
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Image, Pressable, Dimensions, ImageBackground } from 'react-native';
-import { getFunctions, httpsCallable } from 'firebase/functions';
-import { getDatabase, ref, push, get } from 'firebase/database';
-import Animated, {
-    useSharedValue,
-    useAnimatedStyle,
-    withTiming,
-} from 'react-native-reanimated';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+    View,
+    TouchableOpacity,
+    Image,
+    StyleSheet,
+    Dimensions,
+    Alert,
+    Text,
+} from 'react-native';
+import { firebase } from '../../firebase/firebase';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-// Initialize Firebase Functions and Database
-const functions = getFunctions();
-const database = getDatabase();
-const { height, width } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const FaceSwap = () => {
-    const [loading, setLoading] = useState(false);
-    const [results, setResults] = useState(null);
-    const [error, setError] = useState(null);
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [userChoice, setUserChoice] = useState(null);
-    const [pin, setPin] = useState(null);
+    const navigation = useNavigation();
+    const route = useRoute();
+    const { pin, name, selfieURL } = route.params || {};
 
-    // Shared values for animations
-    const fadeAnim = useSharedValue(0);
-    const slideAnim = useSharedValue(500);
+    // Game state variables
+    const [cards, setCards] = useState([]);
+    const [selectedCards, setSelectedCards] = useState([]);
+    const [currentPlayer, setCurrentPlayer] = useState('');
+    const [playerScores, setPlayerScores] = useState({});
+    const [gameOver, setGameOver] = useState(false);
 
-    // Animated styles
-    const fadeInStyle = useAnimatedStyle(() => ({
-        opacity: fadeAnim.value,
-    }));
+    // Firebase references
+    const roomRef = useRef(null);
+    const gameRef = useRef(null);
 
-    const slideInStyle = useAnimatedStyle(() => ({
-        transform: [{ translateY: slideAnim.value }],
-    }));
+    // Load images
+    const cardCover = require('./assets/1.jpeg'); // Update the path as needed
+    const villainImages = {
+        villain1: require('./assets/1.jpeg'),
+        villain2: require('./assets/2.jpeg'),
+        villain3: require('./assets/3.jpeg'),
+        villain4: require('./assets/4.jpeg'),
+        villain5: require('./assets/5.jpeg'),
+        villain6: require('./assets/6.jpeg'),
+        villain7: require('./assets/7.jpeg'),
+        villain8: require('./assets/8.jpeg'),
+    };
 
-    // Fetch the pin if it exists
     useEffect(() => {
-        const fetchPin = async () => {
-            try {
-                const participantsRef = ref(database, 'room');
-                const snapshot = await get(participantsRef);
-                if (snapshot.exists()) {
-                    snapshot.forEach((room) => {
-                        const roomId = room.key;
-                        const participants = room.val().participants;
-                        if (participants) {
-                            setPin(roomId);
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error("Error fetching the pin:", error);
+        if (!pin || !name) {
+            Alert.alert('Error', 'Missing game information.');
+            navigation.goBack();
+            return;
+        }
+
+        roomRef.current = firebase.database().ref(`room/${pin}`);
+        gameRef.current = roomRef.current.child('memoryGame');
+
+        // Initialize game state if not already set
+        gameRef.current.once('value').then((snapshot) => {
+            if (!snapshot.exists()) {
+                initGame();
             }
+        });
+
+        // Listen for game state changes
+        const gameListener = gameRef.current.on('value', (snapshot) => {
+            const gameState = snapshot.val();
+            if (gameState) {
+                setCards(gameState.cards);
+                setCurrentPlayer(gameState.currentPlayer);
+                setPlayerScores(gameState.playerScores || {});
+                setGameOver(gameState.gameOver || false);
+
+                // Check if game over
+                if (gameState.gameOver && !gameOver) {
+                    const winner = determineWinner(gameState.playerScores);
+                    Alert.alert('Game Over', `${winner} wins!`, [
+                        { text: 'OK', onPress: () => navigation.navigate('Home') },
+                    ]);
+                }
+            }
+        });
+
+        return () => {
+            gameRef.current.off('value', gameListener);
+        };
+    }, [pin, name, navigation, gameOver]);
+
+    const initGame = () => {
+        // Prepare cards
+        const villains = Object.keys(villainImages);
+        const cardValues = [...villains, ...villains];
+        shuffleArray(cardValues);
+
+        const newCards = cardValues.map((value, index) => ({
+            id: index,
+            value,
+            isFlipped: false,
+            isMatched: false,
+        }));
+
+        const initialGameState = {
+            cards: newCards,
+            currentPlayer: name, // Start with the player who created the game
+            playerScores: { [name]: 0 },
+            gameOver: false,
         };
 
-        fetchPin();
-    }, []);
+        gameRef.current.set(initialGameState);
+    };
 
-    // Function to call the swapFaces Cloud Function
-    const handleFaceSwap = async () => {
-        setLoading(true);
-        setError(null);
-        setResults(null);
-
-        try {
-            const swapFaces = httpsCallable(functions, 'swapFaces');
-            const response = await swapFaces();
-            setResults(response.data.results);
-            fadeAnim.value = withTiming(1, { duration: 1000 });
-            slideAnim.value = withTiming(0, { duration: 1000 });
-        } catch (err) {
-            setError(err.message);
-        } finally {
-            setLoading(false);
+    const shuffleArray = (array) => {
+        // Fisher-Yates shuffle algorithm
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
         }
     };
 
-    // Function to handle saving the user's choice
-    const handleSaveChoice = async () => {
-        if (userChoice !== null) {
-            try {
-                const selectedPair = results[currentIndex];
-                const basePath = pin ? `room/${pin}/faceSwaps` : 'GeneralFaceSwaps';
+    const handleCardPress = (card) => {
+        if (currentPlayer !== name || card.isFlipped || card.isMatched) {
+            return;
+        }
 
-                // Save the images
-                const imagesRef = ref(database, `${basePath}/images`);
-                await push(imagesRef, {
-                    url1: selectedPair.url1,
-                    url2: selectedPair.url2,
-                    timestamp: Date.now(),
-                });
+        const updatedCards = cards.map((c) =>
+            c.id === card.id ? { ...c, isFlipped: true } : c
+        );
 
-                // Save the pick
-                const picksRef = ref(database, `${basePath}/picks`);
-                await push(picksRef, {
-                    chosenUrl: userChoice === 1 ? selectedPair.url1 : selectedPair.url2,
-                    timestamp: Date.now(),
-                });
+        const newSelectedCards = [...selectedCards, card];
+        setSelectedCards(newSelectedCards);
+        updateCardsInFirebase(updatedCards);
 
-                // Move to the next pair with a slight delay for better experience
-                setTimeout(() => {
-                    setCurrentIndex(currentIndex + 1);
-                    setUserChoice(null);
-                    fadeAnim.value = 0;
-                    slideAnim.value = 500;
-                    fadeAnim.value = withTiming(1, { duration: 1000 });
-                    slideAnim.value = withTiming(0, { duration: 1000 });
-                }, 500);
-            } catch (error) {
-                console.error('Error saving user choice:', error);
-                setError('Failed to save choice. Please try again.');
-            }
+        if (newSelectedCards.length === 2) {
+            checkForMatch(newSelectedCards, updatedCards);
         }
     };
 
-    // Render the question interface
-    const renderQuestion = () => {
-        if (results && currentIndex < results.length) {
-            const pair = results[currentIndex];
-            return (
-                <Animated.View style={[styles.questionContainer, fadeInStyle]}>
-                    <Text style={styles.questionText}>Who looks hotter?</Text>
-                    <View style={styles.imageRow}>
-                        <Pressable onPress={() => setUserChoice(1)} style={[styles.choiceContainer, userChoice === 1 && styles.selected]}>
-                            <Image
-                                source={{ uri: pair.url1.toString() }}
-                                style={styles.image}
-                                resizeMode="contain" // Ensures the entire image is visible
-                            />
-                            <Text style={styles.choiceText}>Choice 1</Text>
-                        </Pressable>
-                        <Pressable onPress={() => setUserChoice(2)} style={[styles.choiceContainer, userChoice === 2 && styles.selected]}>
-                            <Image
-                                source={{ uri: pair.url2.toString() }}
-                                style={styles.image}
-                                resizeMode="contain" // Ensures the entire image is visible
-                            />
-                            <Text style={styles.choiceText}>Choice 2</Text>
-                        </Pressable>
-                    </View>
-                    <Pressable style={styles.submitButton} onPress={handleSaveChoice} disabled={userChoice === null}>
-                        <Text style={styles.submitButtonText}>Submit Choice</Text>
-                    </Pressable>
-                </Animated.View>
+    const updateCardsInFirebase = (updatedCards) => {
+        gameRef.current.update({
+            cards: updatedCards,
+        });
+    };
+
+    const checkForMatch = (selectedCardsPair, updatedCards) => {
+        const [firstCard, secondCard] = selectedCardsPair;
+
+        if (firstCard.value === secondCard.value) {
+            // Match found
+            const matchedCards = updatedCards.map((c) =>
+                c.value === firstCard.value ? { ...c, isMatched: true } : c
             );
-        }
 
-        if (results && currentIndex >= results.length) {
-            return <Text style={styles.completeText}>Thank you for your responses!</Text>;
-        }
+            const newPlayerScores = {
+                ...playerScores,
+                [name]: (playerScores[name] || 0) + 1,
+            };
 
-        return null;
+            // Check for game over
+            const isGameOver = matchedCards.every((card) => card.isMatched);
+
+            gameRef.current.update({
+                cards: matchedCards,
+                playerScores: newPlayerScores,
+                gameOver: isGameOver,
+            });
+
+            setSelectedCards([]);
+
+            if (isGameOver) {
+                setGameOver(true);
+            }
+        } else {
+            // No match
+            setTimeout(() => {
+                const resetCards = updatedCards.map((c) =>
+                    c.id === firstCard.id || c.id === secondCard.id
+                        ? { ...c, isFlipped: false }
+                        : c
+                );
+
+                // Switch to next player
+                roomRef.current
+                    .child('participants')
+                    .once('value')
+                    .then((snapshot) => {
+                        const participants = snapshot.val();
+                        const participantNames = Object.keys(participants);
+                        const nextPlayer = participantNames.find((p) => p !== currentPlayer);
+
+                        gameRef.current.update({
+                            cards: resetCards,
+                            currentPlayer: nextPlayer,
+                        });
+
+                        setSelectedCards([]);
+                    });
+            }, 1000);
+        }
+    };
+
+    const determineWinner = (scores) => {
+        const players = Object.keys(scores);
+        if (scores[players[0]] > scores[players[1]]) {
+            return players[0];
+        } else if (scores[players[0]] < scores[players[1]]) {
+            return players[1];
+        } else {
+            return 'No one, it\'s a tie!';
+        }
+    };
+
+    const renderCard = (card) => {
+        return (
+            <TouchableOpacity
+                key={card.id}
+                onPress={() => handleCardPress(card)}
+                disabled={card.isFlipped || card.isMatched || currentPlayer !== name}
+                style={styles.cardContainer}
+            >
+                <Image
+                    source={
+                        card.isFlipped || card.isMatched
+                            ? villainImages[card.value]
+                            : cardCover
+                    }
+                    style={styles.cardImage}
+                />
+            </TouchableOpacity>
+        );
     };
 
     return (
-        <ImageBackground
-            source={require('../../../assets/background.jpeg')}
-            style={styles.background}
-            resizeMode="cover"
-        >
-            <View style={styles.container}>
-                <Pressable style={styles.activateButton} onPress={handleFaceSwap}>
-                    <Text style={styles.activateButtonText}>Activate FaceSwap</Text>
-                </Pressable>
-                {loading && <ActivityIndicator size="large" color="#FFFFFF" />}
-                {renderQuestion()}
-                {error && <Text style={styles.errorText}>Error: {error}</Text>}
+        <View style={styles.container}>
+            <Text style={styles.turnText}>
+                {gameOver ? 'Game Over' : `Current Turn: ${currentPlayer}`}
+            </Text>
+            <View style={styles.scoresContainer}>
+                {Object.entries(playerScores).map(([playerName, score]) => (
+                    <Text key={playerName} style={styles.scoreText}>
+                        {playerName}: {score}
+                    </Text>
+                ))}
             </View>
-        </ImageBackground>
+            <View style={styles.board}>{cards.map(renderCard)}</View>
+        </View>
     );
 };
 
+const CARD_WIDTH = (width - 80) / 4; // Adjusted for 4x4 grid
+const CARD_HEIGHT = CARD_WIDTH * 1.4;
+
 const styles = StyleSheet.create({
-    background: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
     container: {
         flex: 1,
-        justifyContent: 'center',
+        backgroundColor: '#D3D3D3',
+        paddingTop: 50,
         alignItems: 'center',
-        padding: 20,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background for better contrast
     },
-    questionContainer: {
-        marginTop: 20,
-        padding: 10,
-        backgroundColor: 'rgba(255, 255, 255, 0.8)', // Slightly transparent background
-        borderRadius: 20,
-        alignItems: 'center',
-        width: '90%',
-    },
-    questionText: {
-        fontSize: 22,
+    turnText: {
+        fontSize: 18,
         marginBottom: 10,
-        fontWeight: 'bold',
-        color: '#FF4B4B',
     },
-    imageRow: {
+    scoresContainer: {
         flexDirection: 'row',
-        justifyContent: 'space-around',
-        marginVertical: 20,
+        marginBottom: 10,
     },
-    choiceContainer: {
-        alignItems: 'center',
-        marginHorizontal: 10,
-    },
-    selected: {
-        borderColor: '#FFCC00',
-        borderWidth: 3,
-        borderRadius: 10,
-    },
-    image: {
-        width: width * 0.4,
-        height: height * 0.3,
-        marginBottom: 5,
-        borderRadius: 10,
-    },
-    choiceText: {
+    scoreText: {
+        marginHorizontal: 20,
         fontSize: 16,
-        color: '#FF4B4B',
     },
-    completeText: {
-        fontSize: 18,
-        marginTop: 20,
-
-        color: '#00FF00',
-        fontWeight: 'bold',
+    board: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        margin: 10,
     },
-    errorText: {
-        color: 'red',
-        marginTop: 10,
+    cardContainer: {
+        margin: 5,
     },
-    activateButton: {
-        backgroundColor: '#FF4B4B',
-        paddingVertical: 15,
-        paddingHorizontal: 40,
-        borderRadius: 25,
-        marginBottom: 20,
-    },
-    activateButtonText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    submitButton: {
-        backgroundColor: '#4B94FF',
-        paddingVertical: 15,
-        paddingHorizontal: 30,
-        borderRadius: 25,
-        marginTop: 20,
-    },
-    submitButtonText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: 'bold',
+    cardImage: {
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+        borderRadius: 10,
     },
 });
 
