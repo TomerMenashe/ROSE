@@ -1,5 +1,3 @@
-// /src/screens/RoomScreen.js
-
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ImageBackground, Dimensions, ActivityIndicator, Alert, Image } from 'react-native';
 import { firebase } from '../firebase/firebase';
@@ -71,6 +69,19 @@ const RoomScreen = () => {
 
         if (participantsList.length === 2) {
           setIsLoading(false);
+
+          // Call the swapFaces function when the second player joins
+          const swapFaces = httpsCallable(functions, 'swapFaces');
+          const selfieURLs = participantsList.map(participant => participant.selfieURL);
+
+          swapFaces({
+            faceImageUrl1: selfieURLs[0],
+            faceImageUrl2: selfieURLs[1],
+            pin: pin // Pass the pin as an argument
+          }).catch(error => {
+            console.error('Error calling swapFaces:', error);
+          });
+
           setTimeout(() => {
             // Navigate to the Limerick screen once two participants are ready
             navigation.navigate('PhotoEscape', {

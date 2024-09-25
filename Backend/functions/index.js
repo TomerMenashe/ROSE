@@ -67,18 +67,16 @@ async function generateResponse(model = "gpt-4o", temperature = 0.7, typeOfRespo
  * @returns {Promise<object>} - An object containing the URLs of the swapped faces.
  */
 // eslint-disable-next-line no-unused-vars
-exports.swapFaces = functions.https.onCall(async (_data, _context) => {
+exports.swapFaces = functions.https.onCall(async (data, _context) => {
+  const { faceImageUrl1, faceImageUrl2, pin } = data; // Get the faceImageUrl1, faceImageUrl2, and pin from data
+
   try {
     const storage = getStorage();
     const database = admin.database();
 
-    // URLs for the source face images
-    const faceImageUrl1 = "https://firebasestorage.googleapis.com/v0/b/rose-date.appspot.com/o/ImagesForTesting%2Fdudu2.webp?alt=media&token=00d12660-9578-4c1b-a376-343c1bf4f446";
-    const faceImageUrl2 = "https://firebasestorage.googleapis.com/v0/b/rose-date.appspot.com/o/ImagesForTesting%2FDaniel_headShot.webp?alt=media&token=cddd1526-fadf-4edb-84c3-fddae25f954d";
-
-    // Fetch the images from the URLs
-    const sourceImage1Response = await axios.get(faceImageUrl1, {responseType: "arraybuffer"});
-    const sourceImage2Response = await axios.get(faceImageUrl2, {responseType: "arraybuffer"});
+    // Fetch the images from the provided URLs
+    const sourceImage1Response = await axios.get(faceImageUrl1, { responseType: "arraybuffer" });
+    const sourceImage2Response = await axios.get(faceImageUrl2, { responseType: "arraybuffer" });
 
     // Convert images to base64
     const sourceImage1 = encodeImage(sourceImage1Response.data);
@@ -86,7 +84,7 @@ exports.swapFaces = functions.https.onCall(async (_data, _context) => {
 
     // Get list of target images from 'FaceSwapTargets' folder in Firebase Storage
     const bucket = storage.bucket();
-    const [files] = await bucket.getFiles({prefix: "FaceSwapTargets/"});
+    const [files] = await bucket.getFiles({ prefix: "FaceSwapTargets/" });
 
     if (files.length < 3) {
       throw new Error("Not enough target images available.");
@@ -122,8 +120,8 @@ exports.swapFaces = functions.https.onCall(async (_data, _context) => {
 
       // API calls
       const [response1, response2] = await Promise.all([
-        axios.post("https://api.segmind.com/v1/faceswap-v2", data1, {headers: {"x-api-key": "SG_6fd2da6a5cdfd18d"}}),
-        axios.post("https://api.segmind.com/v1/faceswap-v2", data2, {headers: {"x-api-key": "SG_6fd2da6a5cdfd18d"}}),
+        axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": "SG_6fd2da6a5cdfd18d" } }),
+        axios.post("https://api.segmind.com/v1/faceswap-v2", data2, { headers: { "x-api-key": "SG_6fd2da6a5cdfd18d" } }),
       ]);
 
       if (response1.data.image && response2.data.image) {
@@ -131,38 +129,42 @@ exports.swapFaces = functions.https.onCall(async (_data, _context) => {
         const buffer2 = Buffer.from(response2.data.image, "base64");
         const timestamp = Date.now();
 
-        // Upload swapped images to Firebase Storage
-        const file1 = bucket.file(`faceswaps/${timestamp}_swap${i}_1.jpg`);
-        const file2 = bucket.file(`faceswaps/${timestamp}_swap${i}_2.jpg`);
+        // Save swapped images to Firebase Storage
+        const filePath1 = `room/${pin}/faceSwaps/${i}_1.jpg`;
+        const filePath2 = `room/${pin}/faceSwaps/${i}_2.jpg`;
 
-        await file1.save(buffer1, {contentType: "image/jpeg"});
-        await file2.save(buffer2, {contentType: "image/jpeg"});
+        const file1 = bucket.file(filePath1);
+        const file2 = bucket.file(filePath2);
+
+        await file1.save(buffer1, { contentType: "image/jpeg" });
+        await file2.save(buffer2, { contentType: "image/jpeg" });
 
         const [downloadURL1, downloadURL2] = await Promise.all([
-          file1.getSignedUrl({action: "read", expires: "03-01-2500"}),
-          file2.getSignedUrl({action: "read", expires: "03-01-2500"}),
+          file1.getSignedUrl({ action: "read", expires: "03-01-2500" }),
+          file2.getSignedUrl({ action: "read", expires: "03-01-2500" }),
         ]);
 
         // Store results in the database
-        const faceSwapRef = database.ref("faceswaps").push();
+        const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
         await faceSwapRef.set({
           url1: downloadURL1,
           url2: downloadURL2,
           timestamp,
         });
 
-        results.push({url1: downloadURL1, url2: downloadURL2});
+        results.push({ url1: downloadURL1, url2: downloadURL2 });
       } else {
         throw new Error("FaceSwap API did not return both images.");
       }
     }
 
-    return {results};
+    return { results };
   } catch (error) {
     console.error("Error:", error);
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
+
 
 
 // eslint-disable-next-line no-unused-vars
