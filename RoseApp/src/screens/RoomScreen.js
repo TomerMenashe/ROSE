@@ -73,7 +73,10 @@ const RoomScreen = () => {
           setIsLoading(false);
           setTimeout(() => {
             // Navigate to the Limerick screen once two participants are ready
-            navigation.navigate('PhotoEscape', { pin, name, selfieURL });
+            navigation.navigate('PhotoEscape', {
+              screen: 'PhotoEscapeLimerick',
+              params: { pin, name, selfieURL },
+            });
           }, 2000); // Add a 2-second delay before navigating
         }
       }
@@ -82,7 +85,7 @@ const RoomScreen = () => {
     return () => {
       roomRef.child('participants').off('value', participantListener);
     };
-  }, [pin, navigation]);
+  }, [pin, navigation, functions, name, selfieURL]);
 
   if (!pin) {
     return (
@@ -129,8 +132,8 @@ const RoomScreen = () => {
 const styles = StyleSheet.create({
   background: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: '100%',
+    height: '100%',
   },
   container: {
     flex: 1,

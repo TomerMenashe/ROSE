@@ -1,26 +1,31 @@
-// /src/screens/LoserScreen.js
-
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const LoserScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { itemName, winnerImage, name, selfieURL } = route.params;
+    const { item, name, selfieURL, pin, winnerImage } = route.params;
 
     const moveToNextGame = () => {
-        navigation.navigate('TestFaceSwap', { name, selfieURL });
+        navigation.navigate('PhotoEscape', {
+            screen: 'FaceSwap',
+            params: { pin, name, selfieURL },
+        });
     };
 
     return (
         <View style={styles.container}>
             <Text style={styles.loserText}>😞 Better Luck Next Time!</Text>
             <Text style={styles.text}>
-                Guess your partner is better than you in finding {itemName} :(
+                Unfortunately, you didn't find the {item} in time.
             </Text>
 
-            {winnerImage && <Image source={{ uri: winnerImage }} style={styles.winnerImage} />}
+            {winnerImage ? (
+                <Image source={{ uri: winnerImage }} style={styles.winnerImage} />
+            ) : (
+                <ActivityIndicator size="large" color="#FFCC00" />
+            )}
 
             <Pressable style={styles.button} onPress={moveToNextGame}>
                 <Text style={styles.buttonText}>Next Game</Text>
@@ -32,15 +37,17 @@ const LoserScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#101010',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#101010',
+        padding: 20,
     },
     loserText: {
         fontSize: 36,
         color: '#FFCC00',
         fontWeight: 'bold',
         marginBottom: 20,
+        textAlign: 'center',
     },
     text: {
         fontSize: 24,
@@ -62,6 +69,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         width: 200,
         alignItems: 'center',
+        marginTop: 20,
     },
     buttonText: {
         color: '#fff',

@@ -1,73 +1,48 @@
-import React, { useState, useEffect } from "react";
-import {
-    Alert,
-    Text,
-    View,
-    StyleSheet,
-    ActivityIndicator,
-    ImageBackground,
-    Pressable,
-    Image,
-} from "react-native";
-import { firebase } from "../../firebase/firebase";
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { firebase } from '../../firebase/firebase';
 
 const PhotoEscapeLimerickScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { pin, gameNumber = 1, name, selfieURL } = route.params || {};
-    const [limerickResponse, setLimerickResponse] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [itemName, setItemName] = useState('');
-    const [otherPlayer, setOtherPlayer] = useState(null);
+    const { pin, name, selfieURL } = route.params || {};
+    const [limerick, setLimerick] = useState('');
+    const [item, setItem] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (!pin || !name || !selfieURL) {
+            Alert.alert('Error', 'Missing game information.');
+            navigation.goBack();
+            return;
+        }
+
         const roomRef = firebase.database().ref(`room/${pin}`);
 
-        const fetchItemAndLimerick = async () => {
-            setLoading(true);
+        const fetchLimerickAndItem = async () => {
             try {
-                const itemSnapshot = await roomRef.child('item').once('value');
-                const limerickSnapshot = await roomRef.child('limerick').once('value');
+                const [limerickSnapshot, itemSnapshot] = await Promise.all([
+                    roomRef.child('limerick').once('value'),
+                    roomRef.child('item').once('value'),
+                ]);
 
-                if (itemSnapshot.exists() && limerickSnapshot.exists()) {
-                    setItemName(itemSnapshot.val());
-                    setLimerickResponse(limerickSnapshot.val());
+                if (limerickSnapshot.exists() && itemSnapshot.exists()) {
+                    setLimerick(limerickSnapshot.val());
+                    setItem(itemSnapshot.val());
+                    setIsLoading(false);
                 } else {
-                    Alert.alert('Error', 'Failed to retrieve the item or limerick.');
+                    Alert.alert('Error', 'Failed to retrieve limerick and item.');
+                    navigation.goBack();
                 }
             } catch (error) {
-                console.error('Error fetching item and limerick:', error);
-                Alert.alert('Error', 'Failed to retrieve the item or limerick.');
-            } finally {
-                setLoading(false);
+                console.error('Error fetching limerick and item:', error);
+                Alert.alert('Error', 'An error occurred while fetching limerick and item.');
+                navigation.goBack();
             }
         };
 
-        const fetchOtherPlayerData = async () => {
-            try {
-                const participantsSnapshot = await roomRef.child('participants').once('value');
-                if (participantsSnapshot.exists()) {
-                    const participantsData = participantsSnapshot.val();
-                    const otherPlayers = Object.entries(participantsData).filter(
-                        ([playerName]) => playerName !== name
-                    );
-
-                    if (otherPlayers.length > 0) {
-                        const [otherPlayerName, otherPlayerData] = otherPlayers[0];
-                        setOtherPlayer({
-                            name: otherPlayerName,
-                            selfieURL: otherPlayerData.selfieURL,
-                        });
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching other player data:', error);
-            }
-        };
-
-        fetchItemAndLimerick();
-        fetchOtherPlayerData();
+        fetchLimerickAndItem();
 
         const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -77,157 +52,96 @@ const PhotoEscapeLimerickScreen = () => {
 
                 if (winnerName === name) {
                     navigation.navigate('CongratulationsScreen', {
-                        itemName,
-                        winnerImage: winnerImage,
+                        item,
+                        winnerImage,
                         name,
                         selfieURL,
+                        pin,
                     });
                 } else {
                     navigation.navigate('LoserScreen', {
-                        itemName,
-                        winnerImage: winnerImage,
+                        item,
+                        winnerImage, // Passing the winner's image to LoserScreen
                         name,
                         selfieURL,
+                        pin,
                     });
                 }
             }
         });
 
-        return () => roomRef.child('winner').off('value', winnerListener);
-    }, [pin, navigation, name, selfieURL, itemName]);
+        // Clean up listener when component is unmounted
+        return () => {
+            roomRef.child('winner').off('value', winnerListener);
+        };
+    }, [pin, name, selfieURL, navigation]);
 
-    const startSearch = () => {
-        navigation.navigate('PhotoEscapeCamera', { pin, gameNumber, itemName, name, selfieURL });
+    const handleStart = () => {
+        navigation.navigate('PhotoEscapeCamera', { pin, name, selfieURL, limerick, item });
     };
 
-    return (
-        <ImageBackground
-            source={require('./assets/background.jpeg')}
-            style={styles.background}
-            resizeMode="cover"
-        >
-            <View style={styles.container}>
-                {/* User Circles */}
-                {otherPlayer && (
-                    <View style={styles.userCirclesContainer}>
-                        {/* Current User */}
-                        <View style={styles.userContainer}>
-                            <Image source={{ uri: selfieURL }} style={styles.userImage} />
-                            <Text style={styles.userName}>{name}</Text>
-                        </View>
-                        {/* Other Player */}
-                        <View style={styles.userContainer}>
-                            <Image source={{ uri: otherPlayer.selfieURL }} style={styles.userImage} />
-                            <Text style={styles.userName}>{otherPlayer.name}</Text>
-                        </View>
-                    </View>
-                )}
-
-                <Text style={styles.header}>Find the Object</Text>
-
-                {loading ? (
-                    <ActivityIndicator size="large" color="#FFFFFF" />
-                ) : (
-                    <>
-                        {/* Flashcard-style container for the limerick */}
-                        <View style={styles.flashCard}>
-                            <Text style={styles.limerickText}>{limerickResponse}</Text>
-                        </View>
-                    </>
-                )}
-
-                <View style={styles.searchButtonContainer}>
-                    <Text style={styles.hintText}>When ready, tap below to start searching!</Text>
-                    <Pressable style={styles.button} onPress={startSearch} disabled={loading}>
-                        <Text style={styles.buttonText}>Start Search</Text>
-                    </Pressable>
-                </View>
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF4B4B" />
+                <Text style={styles.loadingText}>Loading limerick...</Text>
             </View>
-        </ImageBackground>
+        );
+    }
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.title}>Your Limerick</Text>
+            <Text style={styles.limerickText}>{limerick}</Text>
+            <TouchableOpacity style={styles.button} onPress={handleStart}>
+                <Text style={styles.buttonText}>Start Game</Text>
+            </TouchableOpacity>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    background: {
+    loadingContainer: {
         flex: 1,
+        backgroundColor: '#101010',
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    loadingText: {
+        color: '#FFFFFF',
+        marginTop: 10,
+        fontSize: 16,
     },
     container: {
         flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
+        backgroundColor: '#101010',
         padding: 20,
+        justifyContent: 'center',
     },
-    header: {
+    title: {
         fontSize: 32,
+        color: '#FFCC00',
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        textAlign: 'center',
         marginBottom: 20,
     },
-    flashCard: {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',  // Slight transparency for elegance
-        padding: 20,
-        borderRadius: 15,  // Rounded corners for the card
-        shadowColor: '#000',  // Subtle shadow for a card effect
-        shadowOffset: { width: 0, height: 5 },
-        shadowOpacity: 0.25,
-        shadowRadius: 10,
-        elevation: 5,  // Shadow effect for Android
-        marginBottom: 30,  // Space below the card
-        width: '90%',  // Take up most of the width of the screen
-        alignItems: 'center',
-    },
     limerickText: {
-        fontSize: 20,  // Make the limerick text larger for readability
-        color: '#333333',  // Dark text for better readability on the light background
-        textAlign: 'center',
-        fontStyle: 'italic',  // Italic styling to enhance the professional look
-        lineHeight: 30,  // Increase line height for better readability
-    },
-    searchButtonContainer: {
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    hintText: {
-        fontSize: 16,
+        fontSize: 24,
         color: '#FFFFFF',
-        marginBottom: 10,
+        textAlign: 'center',
+        marginBottom: 40,
     },
     button: {
         backgroundColor: '#FF4B4B',
-        paddingVertical: 15,
-        paddingHorizontal: 40,
+        padding: 15,
         borderRadius: 10,
-        marginBottom: 20,
+        alignItems: 'center',
+        marginHorizontal: 50,
     },
     buttonText: {
-        color: '#fff',
+        color: '#FFFFFF',
         fontSize: 18,
         fontWeight: 'bold',
-    },
-    userCirclesContainer: {
-        position: 'absolute',
-        top: 50,
-        right: 20,
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    userContainer: {
-        alignItems: 'center',
-        marginLeft: 10,
-    },
-    userImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        borderWidth: 2,
-        borderColor: '#FFFFFF',
-    },
-    userName: {
-        color: '#FFFFFF',
-        fontSize: 12,
-        marginTop: 5,
     },
 });
 

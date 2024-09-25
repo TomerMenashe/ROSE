@@ -1,4 +1,5 @@
 // /src/screens/FaceSwap.js
+// /src/screens/FaceSwap.js
 
 import React, { useEffect, useState, useRef } from 'react';
 import {
@@ -284,3 +285,308 @@ const styles = StyleSheet.create({
 });
 
 export default FaceSwap;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+import React, { useEffect, useState, useRef } from 'react';
+import {
+    View,
+    TouchableOpacity,
+    Image,
+    StyleSheet,
+    Dimensions,
+    Alert,
+    Text,
+    ActivityIndicator,
+} from 'react-native';
+import { firebase } from '../../firebase/firebase';
+import { useNavigation, useRoute } from '@react-navigation/native';
+
+// Extract width and height once from Dimensions
+const { width } = Dimensions.get('window');
+
+const FaceSwap = () => {
+    const navigation = useNavigation();
+    const route = useRoute();
+    const { pin, name, selfieURL } = route.params || {};
+
+    // Game state variables
+    const [images, setImages] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Game logic
+    const [selectedCards, setSelectedCards] = useState([]);
+    const [disableAll, setDisableAll] = useState(false);
+
+    // Firebase references
+    const roomRef = useRef(null);
+
+    useEffect(() => {
+        if (!pin || !name || !selfieURL) {
+            Alert.alert('Error', 'Missing game information.');
+            navigation.goBack();
+            return;
+        }
+
+        roomRef.current = firebase.database().ref(`room/${pin}`);
+
+        // Fetch face swaps from Firebase
+        const fetchFaceSwaps = async () => {
+            try {
+                const faceSwapsSnapshot = await roomRef.current.child('faceSwaps').once('value');
+                if (faceSwapsSnapshot.exists()) {
+                    const faceSwapsData = faceSwapsSnapshot.val();
+
+                    // Flatten the face swaps data into a list
+                    const faceSwapsList = Object.values(faceSwapsData).flatMap((swap) => [
+                        { id: `${swap.timestamp}_1`, url: swap.url1 },
+                        { id: `${swap.timestamp}_2`, url: swap.url2 },
+                    ]);
+
+                    // Limit to 3 pairs (6 images)
+                    const limitedList = faceSwapsList.slice(0, 3);
+
+                    // Duplicate and shuffle for memory game
+                    const duplicatedList = [...limitedList, ...limitedList];
+
+                    shuffleArray(duplicatedList);
+
+                    setImages(duplicatedList.map((item, index) => ({
+                        ...item,
+                        index,
+                        isFlipped: false,
+                        isMatched: false,
+                    })));
+
+                    setIsLoading(false);
+                } else {
+                    // Face swaps not ready yet, listen for changes
+                    roomRef.current.child('faceSwaps').on('value', faceSwapsListener);
+                }
+            } catch (error) {
+                console.error('Error fetching face swaps:', error);
+                Alert.alert('Error', 'Failed to load face swaps.');
+                navigation.goBack();
+            }
+        };
+
+        const faceSwapsListener = (snapshot) => {
+            if (snapshot.exists()) {
+                const faceSwapsData = snapshot.val();
+
+                // Flatten the face swaps data into a list
+                const faceSwapsList = Object.values(faceSwapsData).flatMap((swap) => [
+                    { id: `${swap.timestamp}_1`, url: swap.url1 },
+                    { id: `${swap.timestamp}_2`, url: swap.url2 },
+                ]);
+
+                // Limit to 3 pairs (6 images)
+                const limitedList = faceSwapsList.slice(0, 3);
+
+                // Duplicate and shuffle for memory game
+                const duplicatedList = [...limitedList, ...limitedList];
+
+                shuffleArray(duplicatedList);
+
+                setImages(duplicatedList.map((item, index) => ({
+                    ...item,
+                    index,
+                    isFlipped: false,
+                    isMatched: false,
+                })));
+
+                setIsLoading(false);
+
+                // Remove listener
+                roomRef.current.child('faceSwaps').off('value', faceSwapsListener);
+            }
+        };
+
+        fetchFaceSwaps();
+
+        // Cleanup listener on unmount
+        return () => {
+            roomRef.current.child('faceSwaps').off('value', faceSwapsListener);
+        };
+    }, [pin, name, selfieURL, navigation]);
+
+    const shuffleArray = (array) => {
+        // Fisher-Yates shuffle algorithm
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    };
+
+    const handleCardPress = (card) => {
+        if (disableAll || card.isFlipped || card.isMatched) {
+            return;
+        }
+
+        const updatedImages = images.map((img) =>
+            img.index === card.index ? { ...img, isFlipped: true } : img
+        );
+
+        setImages(updatedImages);
+
+        const newSelectedCards = [...selectedCards, card];
+        setSelectedCards(newSelectedCards);
+
+        if (newSelectedCards.length === 2) {
+            setDisableAll(true);
+            checkForMatch(newSelectedCards, updatedImages);
+        }
+    };
+
+    const checkForMatch = (selectedCardsPair, updatedImages) => {
+        const [firstCard, secondCard] = selectedCardsPair;
+
+        if (firstCard.url === secondCard.url) {
+            // Match found
+            const matchedImages = updatedImages.map((img) =>
+                img.url === firstCard.url ? { ...img, isMatched: true } : img
+            );
+
+            setImages(matchedImages);
+            setSelectedCards([]);
+            setDisableAll(false);
+
+            // Check for game over
+            const isGameOver = matchedImages.every((img) => img.isMatched);
+            if (isGameOver) {
+                Alert.alert('Game Over', 'You have matched all pairs!', [
+                    { text: 'OK', onPress: () => navigation.navigate('Home') },
+                ]);
+            }
+        } else {
+            // No match
+            setTimeout(() => {
+                const resetImages = updatedImages.map((img) =>
+                    img.index === firstCard.index || img.index === secondCard.index
+                        ? { ...img, isFlipped: false }
+                        : img
+                );
+
+                setImages(resetImages);
+                setSelectedCards([]);
+                setDisableAll(false);
+            }, 1000);
+        }
+    };
+
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF4B4B" />
+                <Text style={styles.loadingText}>Loading game...</Text>
+            </View>
+        );
+    }
+
+    if (images.length === 0) {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>No images available. Please try again later.</Text>
+            </View>
+        );
+    }
+
+    const renderCard = (card) => {
+        return (
+            <TouchableOpacity
+                key={card.index}
+                onPress={() => handleCardPress(card)}
+                style={styles.cardContainer}
+                disabled={disableAll || card.isFlipped || card.isMatched}
+            >
+                <Image
+                    source={{ uri: card.isFlipped || card.isMatched ? card.url : 'https://firebasestorage.googleapis.com/v0/b/rose-date.appspot.com/o/Screenshot%202024-09-24%20022934.png?alt=media&token=26bafaaf-cbac-4a74-b977-e8db8004e9e5' }}
+                    style={styles.cardImage}
+                />
+            </TouchableOpacity>
+        );
+    };
+
+    return (
+        <View style={styles.container}>
+            <Text style={styles.gameTitle}>Face Swap Memory Game</Text>
+            <View style={styles.board}>{images.map(renderCard)}</View>
+        </View>
+    );
+};
+
+const CARD_WIDTH = (width - 80) / 4;
+const CARD_HEIGHT = CARD_WIDTH * 1.4;
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#101010',
+        paddingTop: 50,
+        alignItems: 'center',
+    },
+    gameTitle: {
+        fontSize: 24,
+        color: '#FFFFFF',
+        marginBottom: 20,
+    },
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: '#101010',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        color: '#FFFFFF',
+        marginTop: 10,
+        fontSize: 16,
+    },
+    errorContainer: {
+        flex: 1,
+        backgroundColor: '#101010',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorText: {
+        color: '#FF4B4B',
+        fontSize: 18,
+    },
+    board: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        margin: 10,
+    },
+    cardContainer: {
+        margin: 5,
+    },
+    cardImage: {
+        width: CARD_WIDTH,
+        height: CARD_HEIGHT,
+        borderRadius: 10,
+    },
+});
+
+export default FaceSwap;*/

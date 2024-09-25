@@ -8,70 +8,70 @@ import {
     TouchableOpacity,
     Image,
     Alert,
+    ActivityIndicator,
     Dimensions
 } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera'; // Using CameraView as per SelfieScreen
+import { Camera, useCameraPermissions, CameraView } from 'expo-camera'; // Corrected import
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
+import * as FileSystem from 'expo-file-system';
 
-const { height, width } = Dimensions.get('window');
+
+const { width, height } = Dimensions.get('window');
 
 const PhotoEscapeCameraScreen = () => {
     const [permission, requestPermission] = useCameraPermissions();
     const [photo, setPhoto] = useState(null);
-    const [cameraType, setCameraType] = useState('front'); // 'back' or 'front'
+    const [cameraType, setCameraType] = useState('front');
     const [loading, setLoading] = useState(false);
-    const [wrongObject, setWrongObject] = useState(false);
     const cameraRef = useRef(null);
-    const storage = firebase.storage();
     const navigation = useNavigation();
-    const { pin, gameNumber, itemName, name, selfieURL } = useRoute().params || {};
+    const route = useRoute();
+    const { pin, name, item, selfieURL } = route.params || {}; // Changed from itemName to item
     const roomRef = firebase.database().ref(`room/${pin}`);
 
     useEffect(() => {
-        if (!permission) {
-            requestPermission();
-        } else if (!permission.granted) {
+        if (!permission || !permission.granted) {
             requestPermission();
         }
 
         const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
             if (snapshot.exists()) {
                 const winnerData = snapshot.val();
-                const winnerName = winnerData.name; // Ensure 'name' is stored in winnerData
+                const winnerName = winnerData.name;
                 const winnerImage = winnerData.image;
 
                 if (winnerName === name) {
                     navigation.navigate('CongratulationsScreen', {
-                        itemName,
-                        winnerImage: winnerImage,
+                        itemName: item, // Pass itemName if needed
+                        winnerImage,
                         name,
                         selfieURL,
+                        pin
                     });
                 } else {
                     navigation.navigate('LoserScreen', {
-                        itemName,
-                        winnerImage: winnerImage,
+                        itemName: item, // Pass itemName if needed
+                        winnerImage,
                         name,
                         selfieURL,
+                        pin
                     });
                 }
             }
         });
 
-        // Cleanup listener on unmount
         return () => {
             roomRef.child('winner').off('value', winnerListener);
         };
-    }, [permission, roomRef, navigation, itemName, selfieURL, name]);
+    }, [permission, roomRef, navigation, item, selfieURL, name, pin]);
 
     const takePicture = async () => {
         if (cameraRef.current) {
             try {
-                const options = { quality: 0.5 };
+                const options = { quality: 0.5, base64: true };
                 const data = await cameraRef.current.takePictureAsync(options);
                 setPhoto(data.uri);
-                setWrongObject(false);
             } catch (error) {
                 console.error('Error taking picture:', error);
                 Alert.alert('Error', 'Failed to take picture. Please try again.');
@@ -79,88 +79,58 @@ const PhotoEscapeCameraScreen = () => {
         }
     };
 
-    const blobToBase64 = (blob) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result.split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
-    };
-
     const submitPhoto = async () => {
         if (!photo) return;
         setLoading(true);
+
         try {
-            const response = await fetch(photo);
-            const blob = await response.blob();
-            const fileName = `photo_${new Date().getTime()}.png`;
-            const storageRef = storage.ref().child(`photos/${fileName}`);
+            // Convert photo URI to base64
+            const base64Image = await FileSystem.readAsStringAsync(photo, { encoding: 'base64' });
 
-            const snapshot = await storageRef.put(blob);
-            const url = await snapshot.ref.getDownloadURL();
+            // Ensure item is defined
+            if (!item) {
+                throw new Error('currentItem is undefined.');
+            }
 
-            await checkItemInPhoto(blob, url);
-        } catch (error) {
-            console.error('Error uploading file:', error);
-            Alert.alert('Error', 'Failed to upload photo. Please try again.');
-            setLoading(false);
-        }
-    };
-
-    const checkItemInPhoto = async (photoBlob, photoUrl) => {
-        try {
-            const base64Image = await blobToBase64(photoBlob);
             const isItemInImage = firebase.functions().httpsCallable('isItemInImage');
-            const result = await isItemInImage({ currentItem: itemName, image: base64Image });
+            const result = await isItemInImage({ currentItem: item, image: base64Image });
             const { isPresent } = result.data;
 
             if (isPresent) {
-                await roomRef.child('winner').set({ image: photoUrl, name, selfieURL });
-                // Navigation handled by listener
+                const response = await fetch(photo);
+                const blob = await response.blob();
+                const timestamp = new Date().getTime();
+                const storageRef = firebase.storage().ref().child(`photos/${name}_${timestamp}.jpg`);
+                const snapshot = await storageRef.put(blob);
+                const downloadURL = await snapshot.ref.getDownloadURL();
+
+                await roomRef.child('winner').set({ image: downloadURL, name, selfieURL });
+                // The listener will handle navigation
             } else {
-                setWrongObject(true);
                 setPhoto(null);
-                setLoading(false);
-                Alert.alert('Wrong Object', `The ${itemName} was not found in the image. Please try again.`);
+                Alert.alert('Incorrect Item', `The ${item} was not found. Try again!`);
             }
         } catch (error) {
-            console.error('Error checking item in image:', error);
-            Alert.alert('Error', 'Failed to verify the photo. Please try again.');
+            console.error('Error validating or submitting photo:', error);
+            Alert.alert('Error', 'Failed to submit photo. Please try again.');
+        } finally {
             setLoading(false);
         }
     };
 
     const resetCapture = () => {
         setPhoto(null);
-        setWrongObject(false);
     };
 
-    const handleGiveUp = () => {
-        navigation.navigate('LostScreen', { name, selfieURL });
-    };
-
-    const handleBackToLimerick = () => {
-        navigation.navigate('PhotoEscapeLimerick', { pin, name, selfieURL });
-    };
-
-    // Ensure camera is unmounted when navigating away
-    useEffect(() => {
-        return () => {
-            if (cameraRef.current) {
-                cameraRef.current.pausePreview();
-            }
-        };
-    }, []);
-
-    // Check for camera permissions status
     if (!permission || permission.status === 'undetermined') {
         return (
-            <View style={styles.permissionContainer}>
-                <Text style={styles.permissionText}>Requesting camera permissions...</Text>
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF4B4B" />
+                <Text style={styles.loadingText}>Requesting camera permissions...</Text>
             </View>
         );
     }
+
     if (!permission.granted) {
         return (
             <View style={styles.permissionContainer}>
@@ -174,55 +144,40 @@ const PhotoEscapeCameraScreen = () => {
 
     return (
         <View style={styles.container}>
-            {/* Back to Limerick Button */}
-            <TouchableOpacity style={styles.backButton} onPress={handleBackToLimerick}>
-                <Text style={styles.backButtonText}>← BACK TO RIDDLE</Text>
-            </TouchableOpacity>
-
             {!photo ? (
-                <View style={styles.cameraContainer}>
-                    <CameraView
-                        ref={cameraRef}
-                        style={styles.camera}
-                        facing={cameraType} // Use 'back' or 'front'
-                    >
-                        <View style={styles.cameraOverlay}>
-                            <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
-                                <Text style={styles.captureButtonText}>Capture</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </CameraView>
-                </View>
+                <>
+                    <View style={styles.cameraContainer}>
+                        <CameraView
+                            ref={cameraRef}
+                            style={styles.camera}
+                            facing={cameraType}
+                        />
+                    </View>
+                    <TouchableOpacity style={styles.captureButton} onPress={takePicture}>
+                        <Text style={styles.captureButtonText}>Capture</Text>
+                    </TouchableOpacity>
+                </>
             ) : (
                 <View style={styles.previewContainer}>
                     <Image source={{ uri: photo }} style={styles.capturedPhoto} />
                     {!loading && (
                         <View style={styles.buttonRow}>
-                            <TouchableOpacity style={styles.actionButton} onPress={resetCapture}>
+                            <TouchableOpacity style={styles.redButton} onPress={resetCapture}>
                                 <Text style={styles.buttonText}>Retake</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.actionButton} onPress={submitPhoto}>
+                            <TouchableOpacity style={styles.redButton} onPress={submitPhoto}>
                                 <Text style={styles.buttonText}>Submit</Text>
                             </TouchableOpacity>
                         </View>
                     )}
                     {loading && (
                         <View style={styles.loadingContainer}>
-                            <Text style={styles.loadingText}>Processing your image...</Text>
-                        </View>
-                    )}
-                    {wrongObject && (
-                        <View style={styles.wrongObjectContainer}>
-                            <Text style={styles.wrongObjectText}>❌ Wrong Object! Please try again.</Text>
+                            <ActivityIndicator size="large" color="#FF4B4B" />
+                            <Text style={styles.loadingText}>Processing...</Text>
                         </View>
                     )}
                 </View>
             )}
-
-            {/* Smaller Give Up Button in Grey */}
-            <TouchableOpacity style={styles.giveUpButton} onPress={handleGiveUp}>
-                <Text style={styles.giveUpButtonText}>Give Up</Text>
-            </TouchableOpacity>
         </View>
     );
 };
@@ -230,12 +185,27 @@ const PhotoEscapeCameraScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
         backgroundColor: '#101010',
+        padding: 20,
+    },
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: '#101010',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        marginTop: 10,
     },
     permissionContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        backgroundColor: '#101010',
     },
     permissionText: {
         color: '#FFFFFF',
@@ -252,42 +222,23 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
     },
-    backButton: {
-        position: 'absolute',
-        top: 40, // Adjust based on your design
-        left: 20,
-        backgroundColor: 'transparent',
-        padding: 10,
-    },
-    backButtonText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-    },
     cameraContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-    },
-    camera: {
-        width: width * 0.8, // Make the camera window smaller (80% of screen width)
-        height: height * 0.5, // Adjust height as needed (50% of screen height)
+        width: width * 0.7,
+        height: height * 0.5,
         borderRadius: 10,
         overflow: 'hidden',
-        borderColor: '#FFFFFF',
-        borderWidth: 2,
+        borderColor: '#FF4B4B',
+        borderWidth: 4,
+        marginBottom: 20,
     },
-    cameraOverlay: {
-        flex: 1,
-        justifyContent: 'flex-end',
-        alignItems: 'center',
-        paddingBottom: 20,
+    camera: {
+        width: '100%',
+        height: '100%',
     },
     captureButton: {
-        width: 120,
-        height: 50,
         backgroundColor: '#FF4B4B',
-        borderRadius: 25,
+        padding: 15,
+        borderRadius: 30,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -297,65 +248,30 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     previewContainer: {
-        flex: 1,
         alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
     },
     capturedPhoto: {
-        width: '100%',
-        height: '70%',
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: '#FFCC00',
+        width: 250,
+        height: 250,
+        borderRadius: 125,
+        borderWidth: 4,
+        borderColor: '#FF4B4B',
     },
     buttonRow: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         marginTop: 20,
     },
-    actionButton: {
+    redButton: {
         backgroundColor: '#FF4B4B',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
+        padding: 12,
         borderRadius: 10,
         marginHorizontal: 10,
+        alignItems: 'center',
     },
     buttonText: {
         color: '#fff',
         fontSize: 16,
-        fontWeight: 'bold',
-    },
-    loadingContainer: {
-        marginTop: 20,
-        alignItems: 'center',
-    },
-    loadingText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-    },
-    wrongObjectContainer: {
-        marginTop: 20,
-        alignItems: 'center',
-    },
-    wrongObjectText: {
-        color: '#FF4B4B',
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
-    giveUpButton: {
-        backgroundColor: '#808080', // Grey color
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 10,
-        position: 'absolute',
-        bottom: 20,
-        left: '40%', // Centered horizontally
-        right: '40%',
-        alignItems: 'center',
-    },
-    giveUpButtonText: {
-        color: '#fff',
-        fontSize: 14,
         fontWeight: 'bold',
     },
 });

@@ -1,24 +1,30 @@
 // /src/screens/CongratulationsScreen.js
-
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
 const CongratulationsScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { itemName, winnerImage, name, selfieURL } = route.params;
+    const { item, winnerImage, name, selfieURL, pin } = route.params;
 
     const moveToNextGame = () => {
-        navigation.navigate('FaceSwap', { name, selfieURL });
+        navigation.navigate('PhotoEscape', {
+            screen: 'FaceSwap',
+            params: { pin, name, selfieURL },
+        });
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.congratsText}>Winner of the round is... {name}!</Text>
-            <Text style={styles.text}>You successfully found the {itemName}!</Text>
+            <Text style={styles.congratsText}>Congratulations {name}!</Text>
+            <Text style={styles.text}>You successfully found the {item}!</Text>
 
-            {winnerImage && <Image source={{ uri: winnerImage }} style={styles.winnerImage} />}
+            {winnerImage ? (
+                <Image source={{ uri: winnerImage }} style={styles.winnerImage} />
+            ) : (
+                <ActivityIndicator size="large" color="#FFCC00" />
+            )}
 
             <Pressable style={styles.button} onPress={moveToNextGame}>
                 <Text style={styles.buttonText}>Next Game</Text>
@@ -30,9 +36,10 @@ const CongratulationsScreen = () => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#101010',
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#101010',
+        padding: 20,
     },
     congratsText: {
         fontSize: 36,
@@ -60,6 +67,7 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         width: 200,
         alignItems: 'center',
+        marginTop: 20,
     },
     buttonText: {
         color: '#fff',

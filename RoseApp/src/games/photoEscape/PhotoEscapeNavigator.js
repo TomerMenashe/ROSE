@@ -3,26 +3,20 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import PhotoEscapeReadyScreen from './PhotoEscapeReadyScreen';
-import PhotoEscapeResultScreen from './PhotoEscapeResultScreen';
 import PhotoEscapeLimerickScreen from './PhotoEscapeLimerickScreen';
 import PhotoEscapeCameraScreen from './PhotoEscapeCameraScreen';
 import CongratulationsScreen from './CongratulationsScreen';
-import LoserScreen from './LoserScreen'; // Import LoserScreen
-import LostScreen from './LostScreen';
-import { useRoute } from '@react-navigation/native';
+import LoserScreen from './LoserScreen';
+import FaceSwap from '../../screens/Testing/FaceSwap';
 
 const Stack = createNativeStackNavigator();
 
 const PhotoEscapeNavigator = () => {
-    const route = useRoute();
-    const { pin, name, selfieURL } = route.params || {}; // Get pin, name, and selfieURL
-
     return (
         <Stack.Navigator initialRouteName="PhotoEscapeReady" screenOptions={{ headerShown: false }}>
             <Stack.Screen
                 name="PhotoEscapeReady"
                 component={PhotoEscapeReadyScreen}
-                initialParams={{ pin, name, selfieURL }} // Pass pin, name, and selfieURL
             />
             <Stack.Screen
                 name="PhotoEscapeLimerick"
@@ -33,20 +27,16 @@ const PhotoEscapeNavigator = () => {
                 component={PhotoEscapeCameraScreen}
             />
             <Stack.Screen
-                name="PhotoEscapeResult"
-                component={PhotoEscapeResultScreen}
-            />
-            <Stack.Screen
                 name="CongratulationsScreen"
                 component={CongratulationsScreen}
             />
             <Stack.Screen
-                name="LoserScreen" // Add LoserScreen to navigator
+                name="LoserScreen"
                 component={LoserScreen}
             />
             <Stack.Screen
-                name="LostScreen"
-                component={LostScreen}
+                name="FaceSwap"
+                component={FaceSwap}
             />
         </Stack.Navigator>
     );
