@@ -10,12 +10,12 @@ const CongratulationsScreen = () => {
     const { itemName, winnerImage, name, selfieURL } = route.params;
 
     const moveToNextGame = () => {
-        navigation.navigate('TestFaceSwap', { name, selfieURL });
+        navigation.navigate('FaceSwap', { name, selfieURL });
     };
 
     return (
         <View style={styles.container}>
-            <Text style={styles.congratsText}>🎉 Congratulations!</Text>
+            <Text style={styles.congratsText}>Winner of the round is... {name}!</Text>
             <Text style={styles.text}>You successfully found the {itemName}!</Text>
 
             {winnerImage && <Image source={{ uri: winnerImage }} style={styles.winnerImage} />}
@@ -38,6 +38,7 @@ const styles = StyleSheet.create({
         fontSize: 36,
         color: '#FFCC00',
         fontWeight: 'bold',
+        textAlign: 'center',
     },
     text: {
         fontSize: 24,

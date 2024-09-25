@@ -1,7 +1,16 @@
 // /src/screens/PhotoEscapeLimerickScreen.js
 
 import React, { useState, useEffect } from "react";
-import { Alert, Text, View, StyleSheet, ActivityIndicator, ImageBackground, Pressable } from "react-native";
+import {
+    Alert,
+    Text,
+    View,
+    StyleSheet,
+    ActivityIndicator,
+    ImageBackground,
+    Pressable,
+    Image,
+} from "react-native";
 import { firebase } from "../../firebase/firebase";
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -12,6 +21,7 @@ const PhotoEscapeLimerickScreen = () => {
     const [limerickResponse, setLimerickResponse] = useState('');
     const [loading, setLoading] = useState(false);
     const [itemName, setItemName] = useState('');
+    const [otherPlayer, setOtherPlayer] = useState(null);
 
     useEffect(() => {
         const roomRef = firebase.database().ref(`room/${pin}`);
@@ -36,7 +46,30 @@ const PhotoEscapeLimerickScreen = () => {
             }
         };
 
+        const fetchOtherPlayerData = async () => {
+            try {
+                const participantsSnapshot = await roomRef.child('participants').once('value');
+                if (participantsSnapshot.exists()) {
+                    const participantsData = participantsSnapshot.val();
+                    const otherPlayers = Object.entries(participantsData).filter(
+                        ([playerName]) => playerName !== name
+                    );
+
+                    if (otherPlayers.length > 0) {
+                        const [otherPlayerName, otherPlayerData] = otherPlayers[0];
+                        setOtherPlayer({
+                            name: otherPlayerName,
+                            selfieURL: otherPlayerData.selfieURL,
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching other player data:', error);
+            }
+        };
+
         fetchItemAndLimerick();
+        fetchOtherPlayerData();
 
         const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -76,6 +109,22 @@ const PhotoEscapeLimerickScreen = () => {
             resizeMode="cover"
         >
             <View style={styles.container}>
+                {/* User Circles */}
+                {otherPlayer && (
+                    <View style={styles.userCirclesContainer}>
+                        {/* Current User */}
+                        <View style={styles.userContainer}>
+                            <Image source={{ uri: selfieURL }} style={styles.userImage} />
+                            <Text style={styles.userName}>{name}</Text>
+                        </View>
+                        {/* Other Player */}
+                        <View style={styles.userContainer}>
+                            <Image source={{ uri: otherPlayer.selfieURL }} style={styles.userImage} />
+                            <Text style={styles.userName}>{otherPlayer.name}</Text>
+                        </View>
+                    </View>
+                )}
+
                 <Text style={styles.header}>Find the Object</Text>
                 {loading ? (
                     <ActivityIndicator size="large" color="#FFFFFF" />
@@ -95,7 +144,6 @@ const PhotoEscapeLimerickScreen = () => {
         </ImageBackground>
     );
 };
-
 const styles = StyleSheet.create({
     background: {
         flex: 1,
@@ -144,6 +192,30 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: 'bold',
     },
+    userCirclesContainer: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    userContainer: {
+        alignItems: 'center',
+        marginLeft: 10,
+    },
+    userImage: {
+        width: 50,
+        height: 50,
+        borderRadius: 25,
+        borderWidth: 2,
+        borderColor: '#FFFFFF',
+    },
+    userName: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        marginTop: 5,
+    },
 });
+
 
 export default PhotoEscapeLimerickScreen;
