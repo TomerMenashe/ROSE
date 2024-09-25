@@ -1,5 +1,3 @@
-// App.js
-
 import React, { useState, useEffect, useCallback } from 'react';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
@@ -8,13 +6,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 // Import screens
 import SplashScreenComponent from './src/screens/SplashScreen';
+import AboutPage from './src/screens/AboutPage';  // Import the About Page
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import SelfieScreen from './src/screens/SelfieScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import JoinGameScreen from './src/screens/JoinGameScreen';
 import CreateGameScreen from './src/screens/CreateGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
-import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';  // Import PhotoEscape Navigator
+import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';
 import TestingFeaturesScreen from './src/screens/Testing/TestingFeaturesScreen';
 import TestPhotoCapture from './src/screens/Testing/TestPhotoCapture';
 import FaceSwap from './src/screens/Testing/FaceSwap';
@@ -30,6 +29,7 @@ export default function App() {
         await SplashScreen.preventAutoHideAsync();
         await Font.loadAsync({
           'Doodle-Font': require('./assets/fonts/DoodleFont.ttf'),
+          'Neon-Glow': require('./assets/fonts/neon-glow.ttf'), // Load the Neon Glow font as well
         });
       } catch (e) {
         console.warn(e);
@@ -60,14 +60,19 @@ export default function App() {
           options={{ headerShown: false }}
         />
         <MainStack.Screen
+          name="About"
+          component={AboutPage} // Add the AboutPage here
+          options={{ headerShown: false }}
+        />
+        <MainStack.Screen
           name="Welcome"
           component={WelcomeScreen}
           options={{ headerShown: false }}
         />
         <MainStack.Screen
-            name="Selfie"
-            component={SelfieScreen}
-            options={{ headerShown: false }}
+          name="Selfie"
+          component={SelfieScreen}
+          options={{ headerShown: false }}
         />
         <MainStack.Screen
           name="Home"
@@ -93,26 +98,26 @@ export default function App() {
         {/* Add PhotoEscape Navigator */}
         <MainStack.Screen
           name="PhotoEscape"
-          component={PhotoEscapeNavigator}  // Include the PhotoEscape navigator
+          component={PhotoEscapeNavigator}
           options={{ headerShown: false }}
         />
 
         <MainStack.Screen
-            name="TestingFeatures"
-            component={TestingFeaturesScreen}
-            options={{ title: 'Testing Features' }} />
+          name="TestingFeatures"
+          component={TestingFeaturesScreen}
+          options={{ title: 'Testing Features' }}
+        />
 
         <MainStack.Screen
-            name="TestPhotoCapture"
-            component={TestPhotoCapture} />
+          name="TestPhotoCapture"
+          component={TestPhotoCapture}
+        />
 
         <MainStack.Screen
-            name="FaceSwap"
-            component={FaceSwap} />
-
+          name="FaceSwap"
+          component={FaceSwap}
+        />
       </MainStack.Navigator>
-
-
     </NavigationContainer>
   );
 }

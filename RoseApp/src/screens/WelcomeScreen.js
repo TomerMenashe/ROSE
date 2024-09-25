@@ -34,7 +34,7 @@ const WelcomeScreen = ({ navigation }) => {
           resizeMode="cover"
       >
         <View style={styles.container}>
-          <Text style={styles.heading}>Welcome!</Text>
+          <Text style={styles.heading}>Lets get to know you!</Text>
 
           <TextInput
               style={styles.input}
@@ -93,12 +93,15 @@ const styles = StyleSheet.create({
   },
   proceedButton: {
     width: '100%',
-    backgroundColor: '#FF4B4B',
+    backgroundColor: '#D50000', // Deep red lipstick color
+    background: 'linear-gradient(145deg, #FF0000, #D50000)', // Rich red gradient
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: 'center',
     marginBottom: 20,
-  },
+    boxShadow: '0 4px 10px rgba(255, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4)', // Bold red glow and subtle shadow
+    border: '2px solid #FF0000', // Bold red border for definition
+  },  
   proceedButtonText: {
     color: '#FFFFFF',
     fontSize: 18,

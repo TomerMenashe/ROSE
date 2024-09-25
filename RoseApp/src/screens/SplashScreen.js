@@ -132,7 +132,7 @@ const SplashScreen = ({ navigation }) => {
 
   // Function to handle navigation
   const navigateToWelcome = () => {
-    navigation.replace('Welcome');
+    navigation.replace('About');
   };
 
   return (
