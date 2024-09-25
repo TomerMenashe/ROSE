@@ -71,12 +71,17 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 40 },
   pinText: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 20 },
   button: {
-    backgroundColor: '#FF4B4B',
-    paddingVertical: 15,
+    backgroundColor: '#FF0000', // Changed to bright red
+    paddingVertical: 15, // 2% of screen height can also be used
     borderRadius: 10,
     width: width * 0.8,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#FF0000', // Bright red shadow
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.7,
+    shadowRadius: 10,
+    elevation: 5, // For Android shadow
   },
   buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
 });

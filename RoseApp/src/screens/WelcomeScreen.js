@@ -92,20 +92,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   proceedButton: {
-    width: '100%',
-    backgroundColor: '#FF0000', 
-    shadowColor: '#FF0000',
+    backgroundColor: '#FF0000', // Changed to bright red
+    paddingVertical: height * 0.02, // 2% of screen height
+    paddingHorizontal: width * 0.12, // 12% of screen width
+    borderRadius: width * 0.03, // 3% of screen width
+    marginTop: height * 0.05, // 5% of screen height
+    shadowColor: '#FF0000', // Changed to bright red shadow
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
     shadowRadius: 10,
     elevation: 5,
-    background: 'linear-gradient(145deg, #FF0000, #D50000)', // Rich red gradient
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginBottom: 20,
-    boxShadow: '0 4px 10px rgba(255, 0, 0, 0.6), 0 2px 4px rgba(0, 0, 0, 0.4)', // Bold red glow and subtle shadow
-    border: '2px solid #FF0000', // Bold red border for definition
+    // Removed invalid CSS properties and kept React Native compatible styles
   },  
   proceedButtonText: {
     color: '#FFFFFF',
