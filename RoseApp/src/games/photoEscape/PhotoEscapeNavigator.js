@@ -8,6 +8,7 @@ import PhotoEscapeCameraScreen from './PhotoEscapeCameraScreen';
 import CongratulationsScreen from './CongratulationsScreen';
 import LoserScreen from './LoserScreen';
 import FaceSwap from '../../screens/Testing/FaceSwap';
+import LoadingScreen from './LoadingScreen'; // Import the LoadingScreen
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +34,10 @@ const PhotoEscapeNavigator = () => {
             <Stack.Screen
                 name="LoserScreen"
                 component={LoserScreen}
+            />
+            <Stack.Screen
+                name="LoadingScreen" // Add LoadingScreen to the navigator
+                component={LoadingScreen}
             />
             <Stack.Screen
                 name="FaceSwap"

@@ -43,7 +43,7 @@ const PhotoEscapeCameraScreen = () => {
 
                 if (winnerName === name) {
                     navigation.navigate('CongratulationsScreen', {
-                        itemName: item, // Pass itemName if needed
+                        item, // Pass itemName if needed
                         winnerImage,
                         name,
                         selfieURL,
@@ -51,7 +51,7 @@ const PhotoEscapeCameraScreen = () => {
                     });
                 } else {
                     navigation.navigate('LoserScreen', {
-                        itemName: item, // Pass itemName if needed
+                        item, // Pass itemName if needed
                         winnerImage,
                         name,
                         selfieURL,

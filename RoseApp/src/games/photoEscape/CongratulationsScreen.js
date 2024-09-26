@@ -1,4 +1,5 @@
 // /src/screens/CongratulationsScreen.js
+
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -9,10 +10,7 @@ const CongratulationsScreen = () => {
     const { item, winnerImage, name, selfieURL, pin } = route.params;
 
     const moveToNextGame = () => {
-        navigation.navigate('PhotoEscape', {
-            screen: 'FaceSwap',
-            params: { pin, name, selfieURL },
-        });
+        navigation.navigate('LoadingScreen', { pin, name, selfieURL });
     };
 
     return (

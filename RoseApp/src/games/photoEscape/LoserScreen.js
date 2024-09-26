@@ -1,3 +1,5 @@
+// /src/screens/LoserScreen.js
+
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -8,10 +10,7 @@ const LoserScreen = () => {
     const { item, name, selfieURL, pin, winnerImage } = route.params;
 
     const moveToNextGame = () => {
-        navigation.navigate('PhotoEscape', {
-            screen: 'FaceSwap',
-            params: { pin, name, selfieURL },
-        });
+        navigation.navigate('LoadingScreen', { pin, name, selfieURL });
     };
 
     return (

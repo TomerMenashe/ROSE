@@ -27,7 +27,6 @@ const FaceSwap = () => {
     const [currentPlayer, setCurrentPlayer] = useState('');
     const [playerScores, setPlayerScores] = useState({});
     const [gameOver, setGameOver] = useState(false);
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     // Firebase references
@@ -47,21 +46,33 @@ const FaceSwap = () => {
         roomRef.current = firebase.database().ref(`room/${pin}`);
         gameRef.current = roomRef.current.child('memoryGame');
 
-        const initializeGame = async () => {
+        const fetchGameState = async () => {
             try {
                 const snapshot = await gameRef.current.once('value');
-                if (!snapshot.exists()) {
-                    await initGame();
+                const gameState = snapshot.val();
+
+                if (!gameState) {
+                    // This should not happen as LoadingScreen initializes the game
+                    setError('Game state is invalid.');
+                    return;
                 }
-                setLoading(false);
-            } catch (initError) {
-                console.error('Error initializing game:', initError);
-                setError('Failed to initialize game.');
-                setLoading(false);
+
+                setCards(gameState.cards || []);
+                setCurrentPlayer(gameState.currentPlayer || '');
+                setPlayerScores(gameState.playerScores || {});
+                setGameOver(gameState.gameOver || false);
+
+                if (gameState.gameOver && !gameOver) {
+                    const winner = determineWinner(gameState.playerScores);
+                    Alert.alert('Game Over', `${winner} wins!`, [
+                        { text: 'OK', onPress: () => navigation.navigate('Home') },
+                    ]);
+                }
+            } catch (fetchError) {
+                console.error('Error fetching game state:', fetchError);
+                setError('Failed to fetch game state.');
             }
         };
-
-        initializeGame();
 
         const gameListener = gameRef.current.on('value', (snapshot) => {
             const gameState = snapshot.val();
@@ -80,81 +91,13 @@ const FaceSwap = () => {
             }
         });
 
+        // Fetch the initial game state
+        fetchGameState();
+
         return () => {
             gameRef.current.off('value', gameListener);
         };
     }, [pin, name, navigation, gameOver]);
-
-    const initGame = async () => {
-        try {
-            // Fetch the faceSwaps data from Firebase
-            const faceSwapsSnapshot = await roomRef.current.child('faceSwaps').once('value');
-
-            if (!faceSwapsSnapshot.exists()) {
-                Alert.alert('Error', 'No face swaps available.');
-                return;
-            }
-
-            const faceSwapsData = faceSwapsSnapshot.val();
-            const faceSwapsKeys = Object.keys(faceSwapsData).slice(0, 3); // Get the first three keys
-
-            let cardValues = [];
-
-            // Correctly access the URLs as arrays
-            faceSwapsKeys.forEach((key) => {
-                const swapEntry = faceSwapsData[key];
-
-                if (
-                    swapEntry &&
-                    swapEntry.url1 &&
-                    Array.isArray(swapEntry.url1) &&
-                    swapEntry.url1[0] &&
-                    swapEntry.url2 &&
-                    Array.isArray(swapEntry.url2) &&
-                    swapEntry.url2[0]
-                ) {
-                    cardValues.push({ imageUrl: swapEntry.url1[0], pairId: key });
-                    cardValues.push({ imageUrl: swapEntry.url2[0], pairId: key });
-                } else {
-                    console.warn(`Invalid URLs for faceSwap key: ${key}`);
-                }
-            });
-
-            if (cardValues.length < 6) {
-                Alert.alert('Error', 'Not enough valid face swaps to start the game.');
-                return;
-            }
-
-            shuffleArray(cardValues);
-
-            const newCards = cardValues.map((value, index) => ({
-                id: index,
-                imageUrl: value.imageUrl,
-                pairId: value.pairId,
-                isFlipped: false,
-                isMatched: false,
-            }));
-
-            const initialGameState = {
-                cards: newCards,
-                currentPlayer: name,
-                playerScores: { [name]: 0 },
-                gameOver: false,
-            };
-
-            await gameRef.current.set(initialGameState);
-        } catch (error) {
-            console.error('Error initializing game:', error);
-            Alert.alert('Error', 'Failed to initialize game.');
-        }
-    };
-
-    const shuffleArray = (array) => {
-        for (let i = array.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-    };
 
     const handleCardPress = (card) => {
         if (currentPlayer !== name || card.isFlipped || card.isMatched) {
@@ -272,19 +215,10 @@ const FaceSwap = () => {
         );
     };
 
-    if (loading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF4B4B" />
-                <Text style={styles.loadingText}>Loading game...</Text>
-            </View>
-        );
-    }
-
     if (error) {
         return (
             <View style={styles.errorContainer}>
-                <Text style={styles.errorText}>Error: {error}</Text>
+                <Text style={styles.errorText}>{error}</Text>
             </View>
         );
     }
@@ -347,26 +281,17 @@ const styles = StyleSheet.create({
         height: CARD_HEIGHT,
         borderRadius: 10,
     },
-    loadingContainer: {
-        flex: 1,
-        backgroundColor: '#D3D3D3',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        marginTop: 10,
-        fontSize: 16,
-        color: '#555555',
-    },
     errorContainer: {
         flex: 1,
         backgroundColor: '#D3D3D3',
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 20,
     },
     errorText: {
         color: 'red',
         fontSize: 18,
+        textAlign: 'center',
     },
 });
 
