@@ -65,7 +65,7 @@ const FaceSwap = () => {
                 if (gameState.gameOver && !gameOver) {
                     const winner = determineWinner(gameState.playerScores);
                     Alert.alert('Game Over', `${winner} wins!`, [
-                        { text: 'OK', onPress: () => navigation.navigate('Home') },
+                        { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) }, // Updated here
                     ]);
                 }
             } catch (fetchError) {
@@ -85,7 +85,7 @@ const FaceSwap = () => {
                 if (gameState.gameOver && !gameOver) {
                     const winner = determineWinner(gameState.playerScores);
                     Alert.alert('Game Over', `${winner} wins!`, [
-                        { text: 'OK', onPress: () => navigation.navigate('Home') },
+                        { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) }, // And updated here
                     ]);
                 }
             }
