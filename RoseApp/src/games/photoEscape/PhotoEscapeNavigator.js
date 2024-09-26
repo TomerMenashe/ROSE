@@ -7,7 +7,7 @@ import PhotoEscapeLimerickScreen from './PhotoEscapeLimerickScreen';
 import PhotoEscapeCameraScreen from './PhotoEscapeCameraScreen';
 import CongratulationsScreen from './CongratulationsScreen';
 import LoserScreen from './LoserScreen';
-import FaceSwap from '../../screens/Testing/FaceSwap';
+import FaceSwap from '../Memory Game/FaceSwap';
 import LoadingScreen from './LoadingScreen'; // Import the LoadingScreen
 
 const Stack = createNativeStackNavigator();

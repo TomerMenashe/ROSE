@@ -15,7 +15,7 @@ import CreateGameScreen from './src/screens/CreateGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
 import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';
 import EndVideo from './EndVideo'
-import FaceSwap from './src/screens/Testing/FaceSwap';
+import FaceSwap from './src/games/Memory Game/FaceSwap';
 
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
