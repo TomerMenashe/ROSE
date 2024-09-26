@@ -14,7 +14,7 @@
     "@react-navigation/native-stack": "^6.11.0",
     "@react-navigation/stack": "^6.4.1",
     "cors": "^2.8.5",
-    "expo": "^51.0.32",
+    "expo": "~51.0.34",
     "expo-app-loading": "^2.1.1",
     "expo-camera": "~15.0.16",
     "expo-constants": "^16.0.2",

@@ -76,6 +76,18 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
     const storage = getStorage();
     const database = admin.database();
 
+    // Fetch existing url1 entries to prevent duplicates
+    const existingFaceSwapsSnapshot = await database.ref(`room/${pin}/faceSwaps`).once('value');
+    const existingFaceSwaps = existingFaceSwapsSnapshot.val() || {};
+    const existingUrl1Set = new Set();
+
+    Object.values(existingFaceSwaps).forEach(swap => {
+      if (swap.url1 && Array.isArray(swap.url1) && swap.url1.length > 0) {
+        existingUrl1Set.add(swap.url1[0]);
+      }
+    });
+    console.log(`Fetched ${existingUrl1Set.size} existing url1 entries.`);
+
     // Fetch the images from the provided URLs
     console.log("Fetching source images...");
     const sourceImage1Response = await axios.get(faceImageUrl1, { responseType: "arraybuffer" });
@@ -136,11 +148,11 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
         if (response1.data.image && response2.data.image) {
           const buffer1 = Buffer.from(response1.data.image, "base64");
           const buffer2 = Buffer.from(response2.data.image, "base64");
-          const timestamp = Date.now();
+          const timestamp = Date.now();  // Use this to make filenames unique
 
-          // Save swapped images to Firebase Storage
-          const filePath1 = `room/${pin}/faceSwaps/${i}_1.jpg`;
-          const filePath2 = `room/${pin}/faceSwaps/${i}_2.jpg`;
+          // Save swapped images to Firebase Storage with unique names
+          const filePath1 = `room/${pin}/faceSwaps/${i}_1_${timestamp}.jpg`; // Add timestamp to filenames
+          const filePath2 = `room/${pin}/faceSwaps/${i}_2_${timestamp}.jpg`; // Add timestamp to filenames
 
           const file1 = bucket.file(filePath1);
           const file2 = bucket.file(filePath2);
@@ -154,23 +166,33 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
             file2.getSignedUrl({ action: "read", expires: "03-01-2500" }),
           ]);
 
+          const finalURL1 = downloadURL1[0];
+          const finalURL2 = downloadURL2[0];
+
+          // Check if url1 already exists
+          if (existingUrl1Set.has(finalURL1)) {
+            console.log(`url1 ${finalURL1} already exists. Skipping push for this pair.`);
+            continue; // Skip to the next iteration
+          }
+
           // Use push() to add entries
           const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
           await faceSwapRef.set({
-            url1: downloadURL1,
-            url2: downloadURL2,
+            url1: [finalURL1], // Store as an array
+            url2: [finalURL2], // Store as an array
             timestamp,
           });
           console.log(`FaceSwap entry ${i + 1} saved to database.`);
 
-          results.push({ url1: downloadURL1, url2: downloadURL2 });
+          // Add the new url1 to the Set to prevent duplicates within this run
+          existingUrl1Set.add(finalURL1);
+
+          results.push({ url1: [finalURL1], url2: [finalURL2] }); // Add results as arrays
         } else {
           throw new Error("FaceSwap API did not return both images.");
         }
       } catch (iterationError) {
         console.error(`Error processing face swap ${i + 1}:`, iterationError);
-        // Optionally, continue with the next iteration instead of throwing
-        // continue;
         throw iterationError; // Or handle as per your requirement
       }
     }
