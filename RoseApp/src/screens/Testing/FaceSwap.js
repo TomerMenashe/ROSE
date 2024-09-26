@@ -1,5 +1,4 @@
-// /src/screens/FaceSwap.js
-
+// Import necessary modules from React and React Native
 import React, { useEffect, useState, useRef } from 'react';
 import {
     View,
@@ -10,10 +9,12 @@ import {
     Alert,
     Text,
     ActivityIndicator,
+    Animated, // Import Animated for scaling effect
 } from 'react-native';
 import { firebase } from '../../firebase/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
+// Get the screen width
 const { width } = Dimensions.get('window');
 
 const FaceSwap = () => {
@@ -36,6 +37,10 @@ const FaceSwap = () => {
     // Card back cover URL
     const cardCover = { uri: 'https://firebasestorage.googleapis.com/v0/b/rose-date.appspot.com/o/Screenshot%202024-09-24%20022934.png?alt=media&token=26bafaaf-cbac-4a74-b977-e8db8004e9e5' };
 
+    // Define Animated values and scaling factor
+    const scaleAnimations = useRef({});
+    const desiredScale = (2.6 * width) / (width - 80); // 65% of screen size
+
     useEffect(() => {
         if (!pin || !name) {
             Alert.alert('Error', 'Missing game information.');
@@ -52,7 +57,6 @@ const FaceSwap = () => {
                 const gameState = snapshot.val();
 
                 if (!gameState) {
-                    // This should not happen as LoadingScreen initializes the game
                     setError('Game state is invalid.');
                     return;
                 }
@@ -65,7 +69,7 @@ const FaceSwap = () => {
                 if (gameState.gameOver && !gameOver) {
                     const winner = determineWinner(gameState.playerScores);
                     Alert.alert('Game Over', `${winner} wins!`, [
-                        { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) }, // Updated here
+                        { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) },
                     ]);
                 }
             } catch (fetchError) {
@@ -85,7 +89,7 @@ const FaceSwap = () => {
                 if (gameState.gameOver && !gameOver) {
                     const winner = determineWinner(gameState.playerScores);
                     Alert.alert('Game Over', `${winner} wins!`, [
-                        { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) }, // And updated here
+                        { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) },
                     ]);
                 }
             }
@@ -99,6 +103,7 @@ const FaceSwap = () => {
         };
     }, [pin, name, navigation, gameOver]);
 
+    // Handle card press and start the animation
     const handleCardPress = (card) => {
         if (currentPlayer !== name || card.isFlipped || card.isMatched) {
             return;
@@ -111,6 +116,23 @@ const FaceSwap = () => {
         const newSelectedCards = [...selectedCards, card];
         setSelectedCards(newSelectedCards);
         updateCardsInFirebase(updatedCards);
+
+        // Start the scaling animation
+        const scaleAnimation = scaleAnimations.current[card.id] || new Animated.Value(1);
+        scaleAnimations.current[card.id] = scaleAnimation;
+
+        Animated.sequence([
+            Animated.timing(scaleAnimation, {
+                toValue: desiredScale,
+                duration: 1000,
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnimation, {
+                toValue: 1,
+                duration: 1000,
+                useNativeDriver: true,
+            }),
+        ]).start();
 
         if (newSelectedCards.length === 2) {
             checkForMatch(newSelectedCards, updatedCards);
@@ -177,7 +199,7 @@ const FaceSwap = () => {
                         Alert.alert('Error', 'Failed to switch players.');
                         setSelectedCards([]);
                     });
-            }, 1000);
+            }, 2000); // Ensuring card stays enlarged for the full 2-second animation
         }
     };
 
@@ -194,7 +216,15 @@ const FaceSwap = () => {
         }
     };
 
+    // Render the card with animation
     const renderCard = (card) => {
+        // Initialize scale animation for the card if it doesn't exist
+        if (!scaleAnimations.current[card.id]) {
+            scaleAnimations.current[card.id] = new Animated.Value(1);
+        }
+
+        const scaleAnimation = scaleAnimations.current[card.id];
+
         return (
             <TouchableOpacity
                 key={card.id}
@@ -202,13 +232,18 @@ const FaceSwap = () => {
                 disabled={card.isFlipped || card.isMatched || currentPlayer !== name}
                 style={styles.cardContainer}
             >
-                <Image
+                <Animated.Image
                     source={
                         card.isFlipped || card.isMatched
                             ? { uri: card.imageUrl }
                             : cardCover
                     }
-                    style={styles.cardImage}
+                    style={[
+                        styles.cardImage,
+                        {
+                            transform: [{ scale: scaleAnimation }],
+                        },
+                    ]}
                     resizeMode="cover"
                 />
             </TouchableOpacity>
