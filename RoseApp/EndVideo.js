@@ -1,6 +1,6 @@
 // /src/screens/EndVideo.js
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
@@ -10,20 +10,17 @@ import {
     TouchableOpacity,
     Alert,
     Platform,
-    ActivityIndicator,
-    ScrollView,
 } from 'react-native';
 import { firebase } from './src/firebase/firebase'; // Adjusted the path to match FaceSwap
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import * as Permissions from 'expo-permissions';
-import * as MediaLibrary from 'expo-media-library';
+import * as MediaLibrary from 'expo-media-library'; // Removed expo-permissions
 
 const EndVideo = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { pin } = route.params || {}; // Ensure pin is destructured correctly
+    const { pin } = route.params || {};
 
     const [imageUrls, setImageUrls] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -102,12 +99,10 @@ const EndVideo = () => {
     };
 
     const requestPermission = async () => {
-        if (Platform.OS === 'android') {
-            const { status } = await Permissions.askAsync(Permissions.MEDIA_LIBRARY);
-            if (status !== 'granted') {
-                Alert.alert('Permission Denied', 'Cannot save images without permission.');
-                return false;
-            }
+        const { status } = await MediaLibrary.requestPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission Denied', 'Cannot save images without permission.');
+            return false;
         }
         return true;
     };
