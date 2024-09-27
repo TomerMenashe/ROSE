@@ -8,7 +8,6 @@ import {
     Dimensions,
     Alert,
     Text,
-    ActivityIndicator,
     Animated, // Import Animated for scaling effect
 } from 'react-native';
 import { firebase } from '../../firebase/firebase';
@@ -39,7 +38,11 @@ const FaceSwap = () => {
 
     // Define Animated values and scaling factor
     const scaleAnimations = useRef({});
-    const desiredScale = (2.6 * width) / (width - 80); // 65% of screen size
+    const desiredScale = 0.65 * width / CARD_WIDTH; // Scale factor to make the card 65% of screen size
+    const totalDuration = 1500; // 1.5 seconds for the entire scaling effect (up and down)
+
+    // Ref to store previous pressedAt timestamps
+    const previousPressedAt = useRef({});
 
     useEffect(() => {
         if (!pin || !name) {
@@ -72,6 +75,13 @@ const FaceSwap = () => {
                         { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) },
                     ]);
                 }
+
+                // Initialize previousPressedAt
+                const initialPressedAt = {};
+                (gameState.cards || []).forEach((card) => {
+                    initialPressedAt[card.id] = card.pressedAt || 0;
+                });
+                previousPressedAt.current = initialPressedAt;
             } catch (fetchError) {
                 console.error('Error fetching game state:', fetchError);
                 setError('Failed to fetch game state.');
@@ -86,12 +96,27 @@ const FaceSwap = () => {
                 setPlayerScores(gameState.playerScores || {});
                 setGameOver(gameState.gameOver || false);
 
+                // Check for game over
                 if (gameState.gameOver && !gameOver) {
                     const winner = determineWinner(gameState.playerScores);
                     Alert.alert('Game Over', `${winner} wins!`, [
                         { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) },
                     ]);
                 }
+
+                // Handle animations for pressed cards
+                const currentPressedAt = previousPressedAt.current;
+                (gameState.cards || []).forEach((card) => {
+                    const previousTimestamp = currentPressedAt[card.id] || 0;
+                    const currentTimestamp = card.pressedAt || 0;
+
+                    if (currentTimestamp > previousTimestamp) {
+                        // Update the stored timestamp
+                        currentPressedAt[card.id] = currentTimestamp;
+                        // Trigger animation
+                        triggerAnimation(card);
+                    }
+                });
             }
         });
 
@@ -103,6 +128,25 @@ const FaceSwap = () => {
         };
     }, [pin, name, navigation, gameOver]);
 
+    // Function to trigger scaling animation with desired size and total duration
+    const triggerAnimation = (card) => {
+        const scaleAnimation = scaleAnimations.current[card.id] || new Animated.Value(1);
+        scaleAnimations.current[card.id] = scaleAnimation;
+
+        Animated.sequence([
+            Animated.timing(scaleAnimation, {
+                toValue: desiredScale, // Scale to 65% of the screen width
+                duration: totalDuration / 2, // Scale up takes 750ms (half of 1.5 seconds)
+                useNativeDriver: true,
+            }),
+            Animated.timing(scaleAnimation, {
+                toValue: 1,
+                duration: totalDuration / 2, // Scale down takes 750ms
+                useNativeDriver: true,
+            }),
+        ]).start();
+    };
+
     // Handle card press and start the animation
     const handleCardPress = (card) => {
         if (currentPlayer !== name || card.isFlipped || card.isMatched) {
@@ -110,29 +154,12 @@ const FaceSwap = () => {
         }
 
         const updatedCards = cards.map((c) =>
-            c.id === card.id ? { ...c, isFlipped: true } : c
+            c.id === card.id ? { ...c, isFlipped: true, pressedAt: Date.now() } : c
         );
 
         const newSelectedCards = [...selectedCards, card];
         setSelectedCards(newSelectedCards);
         updateCardsInFirebase(updatedCards);
-
-        // Start the scaling animation
-        const scaleAnimation = scaleAnimations.current[card.id] || new Animated.Value(1);
-        scaleAnimations.current[card.id] = scaleAnimation;
-
-        Animated.sequence([
-            Animated.timing(scaleAnimation, {
-                toValue: desiredScale,
-                duration: 1000,
-                useNativeDriver: true,
-            }),
-            Animated.timing(scaleAnimation, {
-                toValue: 1,
-                duration: 1000,
-                useNativeDriver: true,
-            }),
-        ]).start();
 
         if (newSelectedCards.length === 2) {
             checkForMatch(newSelectedCards, updatedCards);
