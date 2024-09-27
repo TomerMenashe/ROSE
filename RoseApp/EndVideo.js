@@ -6,16 +6,16 @@ import {
     Text,
     StyleSheet,
     Animated,
-    Image,
     TouchableOpacity,
     Alert,
     Platform,
+    ActivityIndicator,
 } from 'react-native';
-import { firebase } from './src/firebase/firebase'; // Adjusted the path to match FaceSwap
+import { firebase } from './src/firebase/firebase'; // Adjust the path as necessary
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import * as MediaLibrary from 'expo-media-library'; // Removed expo-permissions
+import * as MediaLibrary from 'expo-media-library';
 
 const EndVideo = () => {
     const navigation = useNavigation();
@@ -25,9 +25,9 @@ const EndVideo = () => {
     const [imageUrls, setImageUrls] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [fadeAnim] = useState(new Animated.Value(0));
-    const [showButtons, setShowButtons] = useState(false);
     const [isPlaying, setIsPlaying] = useState(true);
     const [downloadAllPressed, setDownloadAllPressed] = useState(false);
+    const [isLoading, setIsLoading] = useState(false); // New loading state
 
     useEffect(() => {
         if (!pin) {
@@ -45,9 +45,12 @@ const EndVideo = () => {
 
                 const urls = [];
                 const traverse = (node) => {
-                    if (!node) return;
+                    if (node === null || node === undefined) return;
                     if (typeof node === 'string' && node.startsWith('http')) {
                         urls.push(node);
+                        console.log('Found URL:', node);
+                    } else if (Array.isArray(node)) {
+                        node.forEach((child) => traverse(child));
                     } else if (typeof node === 'object') {
                         Object.values(node).forEach((child) => traverse(child));
                     }
@@ -59,9 +62,11 @@ const EndVideo = () => {
                     setImageUrls(urls);
                 } else {
                     console.warn('No image URLs found.');
+                    Alert.alert('No Images', 'No image URLs were found for this pin.');
                 }
             } catch (error) {
                 console.error('Error fetching image URLs:', error);
+                Alert.alert('Error', 'Failed to fetch image URLs.');
             }
         };
 
@@ -92,29 +97,39 @@ const EndVideo = () => {
             if (currentImageIndex < imageUrls.length - 1) {
                 setCurrentImageIndex(currentImageIndex + 1);
             } else {
-                setShowButtons(true);
                 setIsPlaying(false);
             }
         });
     };
 
     const requestPermission = async () => {
-        const { status } = await MediaLibrary.requestPermissionsAsync();
-        if (status !== 'granted') {
-            Alert.alert('Permission Denied', 'Cannot save images without permission.');
+        try {
+            const { status } = await MediaLibrary.requestPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Denied', 'Cannot save images without permission.');
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error('Permission Error:', error);
+            Alert.alert('Error', 'Failed to request permissions.');
             return false;
         }
-        return true;
     };
 
+    /**
+     * Downloads an image from the given URL into the local filesystem (used for single image download).
+     * @param {string} url - The URL of the image to download.
+     */
     const downloadImage = async (url) => {
         try {
             const hasPermission = await requestPermission();
             if (!hasPermission) return;
 
-            const fileName = url.split('/').pop().split('?')[0];
-            const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+            let fileName = url.split('/').pop().split('?')[0];
+            if (!fileName) fileName = `image_${Date.now()}.jpg`;
 
+            const fileUri = `${FileSystem.documentDirectory}${fileName}`;
             const downloadResumable = FileSystem.createDownloadResumable(url, fileUri);
             const { uri } = await downloadResumable.downloadAsync();
 
@@ -122,64 +137,113 @@ const EndVideo = () => {
                 await Sharing.shareAsync(uri);
             } else {
                 await MediaLibrary.saveToLibraryAsync(uri);
-                Alert.alert('Success', 'Image downloaded to your gallery!');
             }
+
+            Alert.alert('Success', 'The image has been downloaded successfully!');
         } catch (error) {
-            console.error('Download Error:', error);
-            Alert.alert('Error', 'Failed to download image.');
+            console.error('Download Error for URL:', url, error);
+            Alert.alert('Error', `Failed to download image from ${url}`);
         }
     };
 
+    /**
+     * Downloads all images in the `imageUrls` array without using `downloadImage`.
+     */
     const downloadAllImages = async () => {
         setDownloadAllPressed(true);
-        for (const url of imageUrls) {
-            await downloadImage(url);
+        setIsLoading(true); // Start loading
+        try {
+            const hasPermission = await requestPermission();
+            if (!hasPermission) return;
+
+            // Download each image without triggering multiple alerts
+            for (const url of imageUrls) {
+                try {
+                    let fileName = url.split('/').pop().split('?')[0];
+                    if (!fileName) fileName = `image_${Date.now()}.jpg`;
+
+                    const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+                    const downloadResumable = FileSystem.createDownloadResumable(url, fileUri);
+                    const { uri } = await downloadResumable.downloadAsync();
+
+                    if (Platform.OS === 'android') {
+                        await MediaLibrary.saveToLibraryAsync(uri);
+                    }
+                } catch (error) {
+                    console.error('Error downloading image:', error);
+                }
+            }
+
+            // Single success message after all images are downloaded
+            Alert.alert('Success', 'All images have been downloaded!');
+        } catch (error) {
+            console.error('Download All Error:', error);
+            Alert.alert('Error', 'Failed to download some or all images.');
+        } finally {
+            setDownloadAllPressed(false);
+            setIsLoading(false); // End loading
         }
-        setDownloadAllPressed(false);
     };
 
     const watchVideoAgain = () => {
         setCurrentImageIndex(0);
-        setShowButtons(false);
         setIsPlaying(true);
     };
 
     return (
         <View style={styles.container}>
+            {/* Always show the "Download All Images" button at the top */}
+            <TouchableOpacity
+                style={styles.downloadAllButton}
+                onPress={downloadAllImages}
+                disabled={downloadAllPressed || isLoading} // Disable when loading
+            >
+                <Text style={styles.buttonText}>
+                    {isLoading ? 'Downloading...' : 'Download All Images'}
+                </Text>
+            </TouchableOpacity>
+
+            {/* Show loading spinner if downloading all */}
+            {isLoading && (
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#FFCC00" />
+                    <Text style={styles.loadingText}>Downloading all images...</Text>
+                </View>
+            )}
+
+            {/* Display the current image with download option */}
             {imageUrls.length > 0 && isPlaying && (
                 <View style={styles.imageContainer}>
                     <Animated.Image
                         source={{ uri: imageUrls[currentImageIndex] }}
                         style={[styles.image, { opacity: fadeAnim }]}
                         resizeMode="contain"
+                        onError={(error) => {
+                            console.error('Image Load Error:', error.nativeEvent.error);
+                            Alert.alert('Error', 'Failed to load an image.');
+                        }}
                     />
                     <TouchableOpacity
                         style={styles.downloadButton}
                         onPress={() => downloadImage(imageUrls[currentImageIndex])}
+                        disabled={isLoading} // Optionally disable when downloading all
                     >
-                        <Text style={styles.buttonText}>Download</Text>
+                        <Text style={styles.buttonText}>Download Image</Text>
                     </TouchableOpacity>
                 </View>
             )}
 
-            {showButtons && (
+            {/* Display "Watch Video Again" button when animations are done */}
+            {!isPlaying && (
                 <View style={styles.buttonContainer}>
-                    <TouchableOpacity
-                        style={styles.mainButton}
-                        onPress={downloadAllImages}
-                        disabled={downloadAllPressed}
-                    >
-                        <Text style={styles.buttonText}>
-                            {downloadAllPressed ? 'Downloading...' : 'Download all images'}
-                        </Text>
-                    </TouchableOpacity>
                     <TouchableOpacity style={styles.mainButton} onPress={watchVideoAgain}>
                         <Text style={styles.buttonText}>Watch Video Again</Text>
                     </TouchableOpacity>
                 </View>
             )}
 
-            {imageUrls.length === 0 && (
+            {/* Show message if no images are available */}
+            {imageUrls.length === 0 && !isPlaying && (
                 <Text style={styles.loadingText}>No images available.</Text>
             )}
         </View>
@@ -190,44 +254,32 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#101010',
-        justifyContent: 'center',
+        justifyContent: 'flex-start', // Align items from the top
         alignItems: 'center',
         padding: 20,
     },
-    imageContainer: {
-        alignItems: 'center',
-    },
-    image: {
-        width: 300,
-        height: 300,
-    },
-    downloadButton: {
-        marginTop: 10,
-        backgroundColor: '#FF4B4B',
-        padding: 10,
-        borderRadius: 5,
-    },
-    mainButton: {
-        marginVertical: 10,
-        backgroundColor: '#FFCC00',
+    downloadAllButton: {
+        backgroundColor: '#4CAF50',
         padding: 15,
         borderRadius: 5,
-        width: '80%',
+        width: '100%',
         alignItems: 'center',
+        marginBottom: 20,
     },
-    buttonContainer: {
-        marginTop: 20,
+    loadingContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
+        marginBottom: 20,
     },
-    buttonText: {
-        color: '#101010',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    loadingText: {
-        color: '#FFCC00',
-        fontSize: 18,
-    },
-});
+    imageContainer: {
+        alignItems: 'center',
+        flex: 1, // Take up available space
+        justifyContent: 'center', },
+        image: { width: 300, height: 300, },
+        downloadButton: { marginTop: 10, backgroundColor: '#FF4B4B', padding: 10, borderRadius: 5, },
+        mainButton: { marginVertical: 10, backgroundColor: '#FFCC00', padding: 15, borderRadius: 5, width: '80%', alignItems: 'center', },
+        buttonContainer: { marginTop: 20, alignItems: 'center', width: '100%', },
+        buttonText: { color: '#101010', fontSize: 16, fontWeight: 'bold', },
+        loadingText: { color: '#FFCC00', fontSize: 18, marginLeft: 10, }, });
 
-export default EndVideo;
+        export default EndVideo;
