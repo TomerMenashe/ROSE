@@ -27,7 +27,7 @@ const EndVideo = () => {
     const [fadeAnim] = useState(new Animated.Value(0));
     const [isPlaying, setIsPlaying] = useState(true);
     const [downloadAllPressed, setDownloadAllPressed] = useState(false);
-    const [isLoading, setIsLoading] = useState(false); // New loading state
+    const [isLoading, setIsLoading] = useState(false); // Loading state for "Download All"
 
     useEffect(() => {
         if (!pin) {
@@ -43,12 +43,16 @@ const EndVideo = () => {
                 const snapshot = await roomRef.once('value');
                 const data = snapshot.val();
 
-                const urls = [];
+                const urlSet = new Set(); // Use a Set to store unique URLs
+
                 const traverse = (node) => {
                     if (node === null || node === undefined) return;
                     if (typeof node === 'string' && node.startsWith('http')) {
-                        urls.push(node);
-                        console.log('Found URL:', node);
+                        // Optionally, handle case-insensitivity
+                        // const normalizedUrl = node.toLowerCase();
+                        const normalizedUrl = node; // Use as-is if URLs are case-sensitive
+                        urlSet.add(normalizedUrl);
+                        console.log('Found URL:', normalizedUrl);
                     } else if (Array.isArray(node)) {
                         node.forEach((child) => traverse(child));
                     } else if (typeof node === 'object') {
@@ -58,8 +62,8 @@ const EndVideo = () => {
 
                 traverse(data);
 
-                if (urls.length > 0) {
-                    setImageUrls(urls);
+                if (urlSet.size > 0) {
+                    setImageUrls(Array.from(urlSet)); // Convert Set back to Array
                 } else {
                     console.warn('No image URLs found.');
                     Alert.alert('No Images', 'No image URLs were found for this pin.');
@@ -106,7 +110,14 @@ const EndVideo = () => {
         try {
             const { status } = await MediaLibrary.requestPermissionsAsync();
             if (status !== 'granted') {
-                Alert.alert('Permission Denied', 'Cannot save images without permission.');
+                Alert.alert(
+                    'Permission Denied',
+                    'Cannot save images without permission.',
+                    [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+                    ]
+                );
                 return false;
             }
             return true;
@@ -126,20 +137,51 @@ const EndVideo = () => {
             const hasPermission = await requestPermission();
             if (!hasPermission) return;
 
-            let fileName = url.split('/').pop().split('?')[0];
-            if (!fileName) fileName = `image_${Date.now()}.jpg`;
+            let fileName;
+            let directory = '';
+            let fileUri;
 
-            const fileUri = `${FileSystem.documentDirectory}${fileName}`;
+            try {
+                const urlObject = new URL(url);
+                const pathname = decodeURIComponent(urlObject.pathname);
+                const pathAfterO = pathname.split('/o/')[1];
+                const fullPath = pathAfterO ? pathAfterO.split('?')[0] : null;
+
+                if (fullPath) {
+                    const pathSegments = fullPath.split('/');
+                    fileName = pathSegments.pop();
+                    directory = pathSegments.join('/');
+                } else {
+                    throw new Error('Invalid URL structure.');
+                }
+
+                if (!fileName) {
+                    fileName = `image_${Date.now()}.jpg`;
+                }
+
+                const localDir = `${FileSystem.documentDirectory}${directory}/`;
+                await FileSystem.makeDirectoryAsync(localDir, { intermediates: true });
+
+                fileUri = `${localDir}${fileName}`;
+            } catch (parseError) {
+                console.warn('Failed to parse URL, using fallback method:', parseError);
+                fileName = url.split('/').pop().split('?')[0];
+                if (!fileName) {
+                    fileName = `image_${Date.now()}.jpg`;
+                }
+                fileUri = `${FileSystem.documentDirectory}${fileName}`;
+            }
+
             const downloadResumable = FileSystem.createDownloadResumable(url, fileUri);
             const { uri } = await downloadResumable.downloadAsync();
 
             if (Platform.OS === 'ios') {
                 await Sharing.shareAsync(uri);
+                Alert.alert('Success', 'Image shared successfully!');
             } else {
                 await MediaLibrary.saveToLibraryAsync(uri);
+                Alert.alert('Success', 'Image saved to your gallery!');
             }
-
-            Alert.alert('Success', 'The image has been downloaded successfully!');
         } catch (error) {
             console.error('Download Error for URL:', url, error);
             Alert.alert('Error', `Failed to download image from ${url}`);
@@ -154,23 +196,35 @@ const EndVideo = () => {
         setIsLoading(true); // Start loading
         try {
             const hasPermission = await requestPermission();
-            if (!hasPermission) return;
+            if (!hasPermission) {
+                setDownloadAllPressed(false);
+                setIsLoading(false);
+                return;
+            }
 
-            // Download each image without triggering multiple alerts
+            // Iterate over imageUrls and download each image
             for (const url of imageUrls) {
                 try {
                     let fileName = url.split('/').pop().split('?')[0];
-                    if (!fileName) fileName = `image_${Date.now()}.jpg`;
+                    if (!fileName) {
+                        fileName = `image_${Date.now()}.jpg`;
+                    }
 
                     const fileUri = `${FileSystem.documentDirectory}${fileName}`;
                     const downloadResumable = FileSystem.createDownloadResumable(url, fileUri);
                     const { uri } = await downloadResumable.downloadAsync();
 
-                    if (Platform.OS === 'android') {
+                    if (Platform.OS === 'ios') {
+                        await Sharing.shareAsync(uri);
+                        // Optionally, skip sharing if you don't want individual shares during bulk download
+                    } else {
                         await MediaLibrary.saveToLibraryAsync(uri);
+                        // Optionally, delete the file after saving to the gallery
+                        // await FileSystem.deleteAsync(uri);
                     }
                 } catch (error) {
                     console.error('Error downloading image:', error);
+                    // Optionally, collect failed URLs to inform the user later
                 }
             }
 
@@ -203,7 +257,7 @@ const EndVideo = () => {
                 </Text>
             </TouchableOpacity>
 
-            {/* Show loading spinner if downloading all */}
+            {/* Show loading spinner and message if downloading all */}
             {isLoading && (
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#FFCC00" />
@@ -274,12 +328,41 @@ const styles = StyleSheet.create({
     imageContainer: {
         alignItems: 'center',
         flex: 1, // Take up available space
-        justifyContent: 'center', },
-        image: { width: 300, height: 300, },
-        downloadButton: { marginTop: 10, backgroundColor: '#FF4B4B', padding: 10, borderRadius: 5, },
-        mainButton: { marginVertical: 10, backgroundColor: '#FFCC00', padding: 15, borderRadius: 5, width: '80%', alignItems: 'center', },
-        buttonContainer: { marginTop: 20, alignItems: 'center', width: '100%', },
-        buttonText: { color: '#101010', fontSize: 16, fontWeight: 'bold', },
-        loadingText: { color: '#FFCC00', fontSize: 18, marginLeft: 10, }, });
+        justifyContent: 'center',
+    },
+    image: {
+        width: 300,
+        height: 300,
+    },
+    downloadButton: {
+        marginTop: 10,
+        backgroundColor: '#FF4B4B',
+        padding: 10,
+        borderRadius: 5,
+    },
+    mainButton: {
+        marginVertical: 10,
+        backgroundColor: '#FFCC00',
+        padding: 15,
+        borderRadius: 5,
+        width: '80%',
+        alignItems: 'center',
+    },
+    buttonContainer: {
+        marginTop: 20,
+        alignItems: 'center',
+        width: '100%',
+    },
+    buttonText: {
+        color: '#101010',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    loadingText: {
+        color: '#FFCC00',
+        fontSize: 18,
+        marginLeft: 10,
+    },
+});
 
-        export default EndVideo;
+export default EndVideo;
