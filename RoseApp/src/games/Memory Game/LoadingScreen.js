@@ -87,7 +87,7 @@ const LoadingScreen = () => {
                         const imageUrls = newCards.map(card => card.imageUrl);
                         await prefetchImages(imageUrls);
 
-                        // Navigate to the FaceSwap screen
+                        // Navigate to the MemoryGame screen
                         navigation.replace('FaceSwap', { pin, name, selfieURL });
 
                         // Stop loading

@@ -139,7 +139,7 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
         };
 
         // API calls
-        console.log("Calling FaceSwap API for both sources...");
+        console.log("Calling MemoryGame API for both sources...");
         const [response1, response2] = await Promise.all([
           axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": "SG_6fd2da6a5cdfd18d" } }),
           axios.post("https://api.segmind.com/v1/faceswap-v2", data2, { headers: { "x-api-key": "SG_6fd2da6a5cdfd18d" } }),
@@ -189,7 +189,7 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
 
           results.push({ url1: [finalURL1], url2: [finalURL2] }); // Add results as arrays
         } else {
-          throw new Error("FaceSwap API did not return both images.");
+          throw new Error("MemoryGame API did not return both images.");
         }
       } catch (iterationError) {
         console.error(`Error processing face swap ${i + 1}:`, iterationError);

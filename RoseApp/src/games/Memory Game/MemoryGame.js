@@ -16,7 +16,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 // Get the screen width
 const { width } = Dimensions.get('window');
 
-const FaceSwap = () => {
+const MemoryGame = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { pin, name } = route.params || {};
@@ -28,6 +28,7 @@ const FaceSwap = () => {
     const [playerScores, setPlayerScores] = useState({});
     const [gameOver, setGameOver] = useState(false);
     const [error, setError] = useState(null);
+    const [isProcessing, setIsProcessing] = useState(false); // Add this line
 
     // Firebase references
     const roomRef = useRef(null);
@@ -149,7 +150,13 @@ const FaceSwap = () => {
 
     // Handle card press and start the animation
     const handleCardPress = (card) => {
-        if (currentPlayer !== name || card.isFlipped || card.isMatched) {
+        if (
+            isProcessing || // Add this condition
+            selectedCards.length >= 2 || // Add this condition
+            currentPlayer !== name ||
+            card.isFlipped ||
+            card.isMatched
+        ) {
             return;
         }
 
@@ -173,6 +180,7 @@ const FaceSwap = () => {
     };
 
     const checkForMatch = (selectedCardsPair, updatedCards) => {
+        setIsProcessing(true); // Add this line
         const [firstCard, secondCard] = selectedCardsPair;
 
         if (firstCard.pairId === secondCard.pairId) {
@@ -194,6 +202,7 @@ const FaceSwap = () => {
             });
 
             setSelectedCards([]);
+            setIsProcessing(false); // Add this line
 
             if (isGameOver) {
                 setGameOver(true);
@@ -220,11 +229,13 @@ const FaceSwap = () => {
                         });
 
                         setSelectedCards([]);
+                        setIsProcessing(false); // Add this line
                     })
                     .catch((error) => {
                         console.error('Error fetching participants:', error);
                         Alert.alert('Error', 'Failed to switch players.');
                         setSelectedCards([]);
+                        setIsProcessing(false); // Add this line
                     });
             }, 2000); // Ensuring card stays enlarged for the full 2-second animation
         }
@@ -357,4 +368,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default FaceSwap;
+export default MemoryGame;
