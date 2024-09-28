@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const axios = require("axios");
 const {getStorage} = require("firebase-admin/storage");
+const segmindApiKey = functions.config().segmind.api_key;
 const items = ["bra", "headphones", "condom", "thong", "toothbrush", "laptop", "tv remote", "tomato", "toilet brush"];
 
 // Initialize Firebase Admin SDK
@@ -141,8 +142,8 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
         // API calls
         console.log("Calling MemoryGame API for both sources...");
         const [response1, response2] = await Promise.all([
-          axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": "SG_6fd2da6a5cdfd18d" } }),
-          axios.post("https://api.segmind.com/v1/faceswap-v2", data2, { headers: { "x-api-key": "SG_6fd2da6a5cdfd18d" } }),
+          axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": segmindApiKey } }),
+          axios.post("https://api.segmind.com/v1/faceswap-v2", data2, { headers: { "x-api-key": segmindApiKey } }),
         ]);
 
         if (response1.data.image && response2.data.image) {

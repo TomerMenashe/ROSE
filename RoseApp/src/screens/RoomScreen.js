@@ -23,6 +23,7 @@ const RoomScreen = () => {
   // Use a ref to persist the alreadyGenerated flag
   const alreadyGeneratedItemRef = useRef(false);
   const faceSwapCallRef = useRef(false);
+  const roomCreator =useRef(false);
 
   useEffect(() => {
     if (!pin) {
@@ -41,6 +42,7 @@ const RoomScreen = () => {
 
         if (participantsList.length === 1 && !alreadyGeneratedItemRef.current) {
           alreadyGeneratedItemRef.current = true;
+          roomCreator.current = true;
           generatePhotoEscapeData(pin)
               .then(() => {
                   console.log('Photo escape data generated successfully.');
@@ -54,8 +56,9 @@ const RoomScreen = () => {
         if (participantsList.length === 2) {
           setIsLoading(false);
 
-          if (!faceSwapCallRef.current){
+          if (!faceSwapCallRef.current && roomCreator.current){
             faceSwapCallRef.current = true;
+            console.log("Called generating faceSwap");
             generateFaceSwaps(participantsList, pin);
           }
 
