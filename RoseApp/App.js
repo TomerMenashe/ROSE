@@ -15,7 +15,7 @@ import CreateGameScreen from './src/screens/CreateGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
 import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';
 import EndVideo from './EndVideo'
-import FaceSwap from './src/games/Memory Game/FaceSwap';
+import MemoryGame from './src/games/Memory Game/MemoryGame';
 
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
@@ -109,7 +109,7 @@ export default function App() {
 
         <MainStack.Screen
           name="FaceSwap"
-          component={FaceSwap}
+          component={MemoryGame}
         />
       </MainStack.Navigator>
     </NavigationContainer>
