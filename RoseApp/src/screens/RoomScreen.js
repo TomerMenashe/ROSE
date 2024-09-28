@@ -13,6 +13,7 @@ const { height, width } = Dimensions.get('window');
 const RoomScreen = () => {
   const [participants, setParticipants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [countdown, setCountdown] = useState(null); // New state for countdown
   const route = useRoute();
   const navigation = useNavigation();
   const { pin, name, selfieURL } = route.params || {}; // Get the pin, name, and selfieURL from route params
@@ -23,7 +24,7 @@ const RoomScreen = () => {
   // Use a ref to persist the alreadyGenerated flag
   const alreadyGeneratedItemRef = useRef(false);
   const faceSwapCallRef = useRef(false);
-  const roomCreator =useRef(false);
+  const roomCreator = useRef(false);
 
   useEffect(() => {
     if (!pin) {
@@ -45,7 +46,7 @@ const RoomScreen = () => {
           roomCreator.current = true;
           generatePhotoEscapeData(pin)
               .then(() => {
-                  console.log('Photo escape data generated successfully.');
+                console.log('Photo escape data generated successfully.');
               })
               .catch((error) => {
                 console.error('[RoomScreen] Error generating PhotoEscape data:', error);
@@ -56,20 +57,16 @@ const RoomScreen = () => {
         if (participantsList.length === 2) {
           setIsLoading(false);
 
-          if (!faceSwapCallRef.current && roomCreator.current){
+          if (!faceSwapCallRef.current && roomCreator.current) {
             faceSwapCallRef.current = true;
             console.log("Called generating faceSwap");
             generateFaceSwaps(participantsList, pin);
           }
 
-
-          setTimeout(() => {
-            // Navigate to the Limerick screen once two participants are ready
-            navigation.navigate('PhotoEscape', {
-              screen: 'PhotoEscapeLimerick',
-              params: { pin, name, selfieURL },
-            });
-          }, 2000); // Add a 2-second delay before navigating
+          // Start the 5-second countdown only once
+          if (countdown === null) {
+            setCountdown(5);
+          }
         }
       } else {
         setParticipants([]);
@@ -79,7 +76,24 @@ const RoomScreen = () => {
     return () => {
       roomRef.child('participants').off('value', participantListener);
     };
-  }, [pin, navigation, functions, name, selfieURL]);
+  }, [pin, navigation, functions, name, selfieURL, countdown]);
+
+  // Countdown effect
+  useEffect(() => {
+    let timerId;
+
+    if (countdown > 0) {
+      timerId = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (countdown === 0) {
+      // Navigate to the Limerick screen once countdown reaches zero
+      navigation.navigate('PhotoEscape', {
+        screen: 'PhotoEscapeLimerick',
+        params: { pin, name, selfieURL },
+      });
+    }
+
+    return () => clearTimeout(timerId);
+  }, [countdown, navigation, pin, name, selfieURL]);
 
   if (!pin) {
     return (
@@ -115,6 +129,10 @@ const RoomScreen = () => {
                 <ActivityIndicator size="large" color="#FFFFFF" />
                 <Text style={styles.loadingText}>Waiting for players...</Text>
               </>
+          ) : countdown !== null ? (
+              <Text style={styles.loadingText}>
+                Starting game in {countdown} second{countdown !== 1 ? 's' : ''}...
+              </Text>
           ) : (
               <Text style={styles.loadingText}>Players connected! Starting game...</Text>
           )}
