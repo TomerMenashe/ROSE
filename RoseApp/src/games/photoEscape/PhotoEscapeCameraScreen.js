@@ -108,7 +108,7 @@ const PhotoEscapeCameraScreen = () => {
                 // The listener will handle navigation
             } else {
                 setPhoto(null);
-                Alert.alert('Incorrect Item', `The ${item} was not found. Try again!`);
+                Alert.alert('Incorrect Item', `The item was not found. Try again!`);
             }
         } catch (error) {
             console.error('Error validating or submitting photo:', error);
