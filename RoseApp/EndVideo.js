@@ -48,11 +48,10 @@ const EndVideo = () => {
                 const traverse = (node) => {
                     if (node === null || node === undefined) return;
                     if (typeof node === 'string' && node.startsWith('http')) {
-                        // Optionally, handle case-insensitivity
                         // const normalizedUrl = node.toLowerCase();
                         const normalizedUrl = node; // Use as-is if URLs are case-sensitive
                         urlSet.add(normalizedUrl);
-                        console.log('Found URL:', normalizedUrl);
+                        //console.log('Found URL:', normalizedUrl);
                     } else if (Array.isArray(node)) {
                         node.forEach((child) => traverse(child));
                     } else if (typeof node === 'object') {

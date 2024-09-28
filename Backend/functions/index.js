@@ -4,7 +4,8 @@ const axios = require("axios");
 const {getStorage} = require("firebase-admin/storage");
 const segmindApiKey = functions.config().segmind.api_key;
 const items = ["bra", "headphones", "condom", "thong", "toothbrush", "laptop", "tv remote", "tomato", "toilet brush"];
-
+const crypto = require('crypto');
+const { URL } = require('url');
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
@@ -69,7 +70,7 @@ async function generateResponse(model = "gpt-4o", temperature = 0.7, typeOfRespo
  */
 // eslint-disable-next-line no-unused-vars
 exports.swapFaces = functions.https.onCall(async (data, _context) => {
-  const { faceImageUrl1, faceImageUrl2, pin } = data; // Get the faceImageUrl1, faceImageUrl2, and pin from data
+  const { faceImageUrl1, faceImageUrl2, pin } = data;
 
   try {
     console.log(`Starting swapFaces for pin: ${pin}`);
@@ -84,10 +85,15 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
 
     Object.values(existingFaceSwaps).forEach(swap => {
       if (swap.url1 && Array.isArray(swap.url1) && swap.url1.length > 0) {
-        existingUrl1Set.add(swap.url1[0]);
+        const signedUrl = swap.url1[0];
+        const urlObj = new URL(signedUrl);
+        const pathname = urlObj.pathname; // /bucket-name/file-path
+        const pathParts = pathname.split('/');
+        const filePath = pathParts.slice(2).join('/'); // Remove leading '/' and bucket name
+        existingUrl1Set.add(filePath);
       }
     });
-    console.log(`Fetched ${existingUrl1Set.size} existing url1 entries.`);
+    console.log(`Fetched ${existingUrl1Set.size} existing file paths.`);
 
     // Fetch the images from the provided URLs
     console.log("Fetching source images...");
@@ -149,14 +155,23 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
         if (response1.data.image && response2.data.image) {
           const buffer1 = Buffer.from(response1.data.image, "base64");
           const buffer2 = Buffer.from(response2.data.image, "base64");
-          const timestamp = Date.now();  // Use this to make filenames unique
 
-          // Save swapped images to Firebase Storage with unique names
-          const filePath1 = `room/${pin}/faceSwaps/${i}_1_${timestamp}.jpg`; // Add timestamp to filenames
-          const filePath2 = `room/${pin}/faceSwaps/${i}_2_${timestamp}.jpg`; // Add timestamp to filenames
+          // Generate deterministic filenames
+          const targetImageName = selectedImages[i].name;
+          const uniqueId1 = crypto.createHash('md5').update(faceImageUrl1 + targetImageName).digest('hex');
+          const uniqueId2 = crypto.createHash('md5').update(faceImageUrl2 + targetImageName).digest('hex');
+
+          const filePath1 = `room/${pin}/faceSwaps/${uniqueId1}_1.jpg`;
+          const filePath2 = `room/${pin}/faceSwaps/${uniqueId2}_2.jpg`;
 
           const file1 = bucket.file(filePath1);
           const file2 = bucket.file(filePath2);
+
+          // Check if filePath1 already exists
+          if (existingUrl1Set.has(filePath1)) {
+            console.log(`File path ${filePath1} already exists. Skipping push for this pair.`);
+            continue; // Skip to the next iteration
+          }
 
           console.log(`Saving swapped images to storage: ${filePath1}, ${filePath2}`);
           await file1.save(buffer1, { contentType: "image/jpeg" });
@@ -170,23 +185,16 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
           const finalURL1 = downloadURL1[0];
           const finalURL2 = downloadURL2[0];
 
-          // Check if url1 already exists
-          if (existingUrl1Set.has(finalURL1)) {
-            console.log(`url1 ${finalURL1} already exists. Skipping push for this pair.`);
-            continue; // Skip to the next iteration
-          }
-
           // Use push() to add entries
           const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
           await faceSwapRef.set({
             url1: [finalURL1], // Store as an array
             url2: [finalURL2], // Store as an array
-            timestamp,
           });
           console.log(`FaceSwap entry ${i + 1} saved to database.`);
 
-          // Add the new url1 to the Set to prevent duplicates within this run
-          existingUrl1Set.add(finalURL1);
+          // Add the new filePath1 to the Set to prevent duplicates within this run
+          existingUrl1Set.add(filePath1);
 
           results.push({ url1: [finalURL1], url2: [finalURL2] }); // Add results as arrays
         } else {
@@ -194,7 +202,7 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
         }
       } catch (iterationError) {
         console.error(`Error processing face swap ${i + 1}:`, iterationError);
-        throw iterationError; // Or handle as per your requirement
+        throw iterationError;
       }
     }
 
@@ -205,7 +213,6 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
-
 // eslint-disable-next-line no-unused-vars
 exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
   return items[Math.floor(Math.random() * items.length)];
