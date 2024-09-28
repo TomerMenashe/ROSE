@@ -103,12 +103,12 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
     const bucket = storage.bucket();
     const [files] = await bucket.getFiles({ prefix: "FaceSwapTargets/" });
 
-    if (files.length < 3) {
+    if (files.length < 8) {
       throw new Error("Not enough target images available.");
     }
 
-    // Select three random images from the FaceSwapTargets folder
-    const selectedImages = files.sort(() => 0.5 - Math.random()).slice(0, 3);
+    // Select 8 random images from the FaceSwapTargets folder
+    const selectedImages = files.sort(() => 0.5 - Math.random()).slice(0, 8);
     console.log(`Selected ${selectedImages.length} target images.`);
 
     const results = [];
