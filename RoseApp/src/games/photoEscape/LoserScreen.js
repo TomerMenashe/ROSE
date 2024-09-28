@@ -1,33 +1,25 @@
 // /src/screens/LoserScreen.js
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { fetchItem } from './PhotoEscapeGeneratingFunctions';
+import {fetchItem} from "./PhotoEscapeGeneratingFunctions";
 
 const LoserScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const [item, setItem] = useState(""); // Using state to handle item
-    const { name, selfieURL, pin, winnerImage } = route.params; // Removed item from direct destructuring
-
-    // Effect to handle updating the item parameter when screen is focused
-    useEffect(() => {
-        const unsubscribe = navigation.addListener('focus', () => {
-            setItem(route.params?.item || ""); // Update item state when the screen gains focus
-        });
-        return unsubscribe;
-    }, [navigation, route.params]);
+    const { item, name, selfieURL, pin, winnerImage } = route.params;
 
     const moveToNextGame = () => {
         navigation.navigate('LoadingScreen', { pin, name, selfieURL });
     };
 
+
     return (
         <View style={styles.container}>
-            <Text style={styles.loserText}>Sorry {name} darling 😞 !</Text>
+            <Text style={styles.loserText}>Sorry {name} darling😞!</Text>
             <Text style={styles.text}>
-                You didn't find the {fetchItem(pin)} before your wonderful partner.
+                You didn't find the item before your wonderful partner
             </Text>
 
             {winnerImage ? (
