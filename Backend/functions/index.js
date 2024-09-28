@@ -246,7 +246,7 @@ exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
     if (!image) {
       throw new functions.https.HttpsError("invalid-argument", "Image is required.");
     }
-    const prompt = `If this image is a selfie where you can see my face clearly, respond only with the word: yes (without any other characters or words).
+    const prompt = `If this image is a selfie where you can see my face clearly, respond only with the word: yes (without period or any other characters or words),
     if not, respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie. 
     make it funny and sarcastic, and in a length suited for a pop up message on a mobile phone.`;
 
