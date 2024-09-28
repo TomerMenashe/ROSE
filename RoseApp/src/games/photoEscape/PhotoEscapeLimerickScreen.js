@@ -1,7 +1,10 @@
+// PhotoEscapeLimerickScreen.js
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
+import { fetchLimerick, fetchItem } from '../../../UsefulFunctions';
 
 const PhotoEscapeLimerickScreen = () => {
     const navigation = useNavigation();
@@ -13,36 +16,36 @@ const PhotoEscapeLimerickScreen = () => {
 
     useEffect(() => {
         if (!pin || !name || !selfieURL) {
+            console.error('[PhotoEscapeLimerickScreen] Missing game information:', { pin, name, selfieURL });
             Alert.alert('Error', 'Missing game information.');
             navigation.goBack();
             return;
         }
 
-        const roomRef = firebase.database().ref(`room/${pin}`);
-
-        const fetchLimerickAndItem = async () => {
+        const fetchData = async () => {
             try {
-                const [limerickSnapshot, itemSnapshot] = await Promise.all([
-                    roomRef.child('limerick').once('value'),
-                    roomRef.child('item').once('value'),
+                const [fetchedItem, fetchedLimerick] = await Promise.all([
+                    fetchItem(pin),
+                    fetchLimerick(pin),
                 ]);
 
-                if (limerickSnapshot.exists() && itemSnapshot.exists()) {
-                    setLimerick(limerickSnapshot.val());
-                    setItem(itemSnapshot.val());
+                if (fetchedItem && fetchedLimerick) {
+                    setItem(fetchedItem);
+                    setLimerick(fetchedLimerick);
                     setIsLoading(false);
                 } else {
-                    Alert.alert('Error', 'Failed to retrieve limerick and item.');
-                    navigation.goBack();
+                    throw new Error('Failed to fetch item or limerick');
                 }
             } catch (error) {
-                console.error('Error fetching limerick and item:', error);
+                console.error('[PhotoEscapeLimerickScreen] Error fetching data:', error);
                 Alert.alert('Error', 'An error occurred while fetching limerick and item.');
                 navigation.goBack();
             }
         };
 
-        fetchLimerickAndItem();
+        fetchData();
+
+        const roomRef = firebase.database().ref(`room/${pin}`);
 
         const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
             if (snapshot.exists()) {
@@ -67,6 +70,7 @@ const PhotoEscapeLimerickScreen = () => {
                         pin,
                     });
                 }
+            } else {
             }
         });
 

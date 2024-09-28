@@ -205,8 +205,6 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
   }
 });
 
-
-
 // eslint-disable-next-line no-unused-vars
 exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
   return items[Math.floor(Math.random() * items.length)];
