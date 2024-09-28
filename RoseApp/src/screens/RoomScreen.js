@@ -5,7 +5,8 @@ import { View, Text, StyleSheet, ImageBackground, Dimensions, ActivityIndicator,
 import { firebase } from '../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { generatePhotoEscapeData } from '../../PhotoEscapeGeneratingFunctions';
+import { generatePhotoEscapeData } from '../games/photoEscape/PhotoEscapeGeneratingFunctions';
+import { generateFaceSwaps } from '../games/Memory Game/FaceSwapHandling';
 
 const { height, width } = Dimensions.get('window');
 
@@ -20,7 +21,8 @@ const RoomScreen = () => {
   const functions = getFunctions(firebase.app(), 'us-central1');
 
   // Use a ref to persist the alreadyGenerated flag
-  const alreadyGeneratedRef = useRef(false);
+  const alreadyGeneratedItemRef = useRef(false);
+  const faceSwapCallRef = useRef(false);
 
   useEffect(() => {
     if (!pin) {
@@ -30,8 +32,6 @@ const RoomScreen = () => {
 
     const roomRef = firebase.database().ref(`room/${pin}`);
 
-    // Removed fetchData as it's not utilized
-
     // Listen for changes in participants
     const participantListener = roomRef.child('participants').on('value', (snapshot) => {
       if (snapshot.exists()) {
@@ -39,8 +39,8 @@ const RoomScreen = () => {
         const participantsList = Object.values(participantsData);
         setParticipants(participantsList);
 
-        if (participantsList.length === 1 && !alreadyGeneratedRef.current) {
-          alreadyGeneratedRef.current = true;
+        if (participantsList.length === 1 && !alreadyGeneratedItemRef.current) {
+          alreadyGeneratedItemRef.current = true;
           generatePhotoEscapeData(pin)
               .then(() => {
                   console.log('Photo escape data generated successfully.');
@@ -54,20 +54,11 @@ const RoomScreen = () => {
         if (participantsList.length === 2) {
           setIsLoading(false);
 
-          // Call the swapFaces function when the second player joins
-          const swapFaces = httpsCallable(functions, 'swapFaces');
-          const selfieURLs = participantsList.map(participant => participant.selfieURL);
+          if (!faceSwapCallRef.current){
+            faceSwapCallRef.current = true;
+            generateFaceSwaps(participantsList, pin);
+          }
 
-          swapFaces({
-            faceImageUrl1: selfieURLs[0],
-            faceImageUrl2: selfieURLs[1],
-            pin: pin // Pass the pin as an argument
-          }).then((result) => {
-              console.log('Faces swapped successfully.');
-          }).catch(error => {
-            console.error('Error calling swapFaces:', error);
-            Alert.alert('Error', 'Failed to swap faces.');
-          });
 
           setTimeout(() => {
             // Navigate to the Limerick screen once two participants are ready

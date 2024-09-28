@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Alert } from 'react-native';
-import { firebase } from './src/firebase/firebase';
+import { firebase } from '../../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Initialize Firebase functions

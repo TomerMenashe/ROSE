@@ -3,7 +3,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import {generatePhotoEscapeData} from "../../../PhotoEscapeGeneratingFunctions";
+import {generatePhotoEscapeData} from "./PhotoEscapeGeneratingFunctions";
 
 const CongratulationsScreen = () => {
     const navigation = useNavigation();
