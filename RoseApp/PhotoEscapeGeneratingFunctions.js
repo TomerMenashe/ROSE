@@ -1,4 +1,4 @@
-// UsefulFunctions.js
+// PhotoEscapeGeneratingFunctions.js
 
 import React from 'react';
 import { Alert } from 'react-native';
@@ -59,15 +59,16 @@ export async function generateHamshir(pin, item) {
 }
 
 /**
- * Prepares the photo hunt by generating an item and its corresponding limerick.
+ * Generates the data needed for the PhotoEscape game by generating an item and its corresponding limerick.
  * @param {string} pin - The room PIN.
+ * @returns {Promise<void>}
  */
-export async function preparePhotoHunt(pin) {
+export async function generatePhotoEscapeData(pin) {
     try {
         const item = await generateItem(pin);
         const limerick = await generateHamshir(pin, item);
     } catch (error) {
-        console.error('[preparePhotoHunt] Error preparing photo hunt:', error);
+        console.error('[generatePhotoEscapeData] Error generating PhotoEscape data:', error);
     }
 }
 
@@ -83,7 +84,6 @@ export async function fetchItem(pin) {
         const itemSnapshot = await roomRef.child('item').once('value');
         if (itemSnapshot.exists()) {
             return itemSnapshot.val();
-
         } else {
             Alert.alert('Error', 'Failed to retrieve item.');
             return null;
@@ -105,7 +105,7 @@ export async function fetchLimerick(pin) {
     try {
         const limerickSnapshot = await roomRef.child('limerick').once('value');
         if (limerickSnapshot.exists()) {
-            return  limerickSnapshot.val();
+            return limerickSnapshot.val();
         } else {
             console.warn('[fetchLimerick] Limerick does not exist.');
             Alert.alert('Error', 'Failed to retrieve limerick.');

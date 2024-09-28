@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
-import { fetchLimerick, fetchItem } from '../../../UsefulFunctions';
+import { fetchLimerick, fetchItem } from '../../../PhotoEscapeGeneratingFunctions';
 
 const PhotoEscapeLimerickScreen = () => {
     const navigation = useNavigation();

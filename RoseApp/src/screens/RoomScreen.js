@@ -5,15 +5,13 @@ import { View, Text, StyleSheet, ImageBackground, Dimensions, ActivityIndicator,
 import { firebase } from '../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { preparePhotoHunt } from '../../UsefulFunctions';
+import { generatePhotoEscapeData } from '../../PhotoEscapeGeneratingFunctions';
 
 const { height, width } = Dimensions.get('window');
 
 const RoomScreen = () => {
   const [participants, setParticipants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [item, setItem] = useState('');
-  const [limerick, setLimerick] = useState('');
   const route = useRoute();
   const navigation = useNavigation();
   const { pin, name, selfieURL } = route.params || {}; // Get the pin, name, and selfieURL from route params
@@ -32,18 +30,7 @@ const RoomScreen = () => {
 
     const roomRef = firebase.database().ref(`room/${pin}`);
 
-    const fetchData = async () => {
-      try {
-        const [itemSnapshot, limerickSnapshot] = await Promise.all([
-          roomRef.child('item').once('value'),
-          roomRef.child('limerick').once('value'),
-        ]);
-      } catch (error) {
-        console.error('[RoomScreen] Error fetching initial data:', error);
-        Alert.alert('Error', 'Failed to fetch initial data.');
-      }
-    };
-    fetchData();
+    // Removed fetchData as it's not utilized
 
     // Listen for changes in participants
     const participantListener = roomRef.child('participants').on('value', (snapshot) => {
@@ -54,11 +41,13 @@ const RoomScreen = () => {
 
         if (participantsList.length === 1 && !alreadyGeneratedRef.current) {
           alreadyGeneratedRef.current = true;
-          preparePhotoHunt(pin)
+          generatePhotoEscapeData(pin)
               .then(() => {
+                  console.log('Photo escape data generated successfully.');
               })
               .catch((error) => {
-                console.error('[RoomScreen] Error preparing photo hunt:', error);
+                console.error('[RoomScreen] Error generating PhotoEscape data:', error);
+                Alert.alert('Error', 'Failed to generate PhotoEscape data.');
               });
         }
 
@@ -74,6 +63,7 @@ const RoomScreen = () => {
             faceImageUrl2: selfieURLs[1],
             pin: pin // Pass the pin as an argument
           }).then((result) => {
+              console.log('Faces swapped successfully.');
           }).catch(error => {
             console.error('Error calling swapFaces:', error);
             Alert.alert('Error', 'Failed to swap faces.');

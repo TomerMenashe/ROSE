@@ -3,7 +3,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import {preparePhotoHunt} from "../../../UsefulFunctions";
+import {generatePhotoEscapeData} from "../../../PhotoEscapeGeneratingFunctions";
 
 const CongratulationsScreen = () => {
     const navigation = useNavigation();
@@ -11,7 +11,7 @@ const CongratulationsScreen = () => {
     const { item, winnerImage, name, selfieURL, pin } = route.params;
 
     const moveToNextGame = () => {
-        preparePhotoHunt(pin);
+        generatePhotoEscapeData(pin);
         navigation.navigate('LoadingScreen', { pin, name, selfieURL });
     };
 
