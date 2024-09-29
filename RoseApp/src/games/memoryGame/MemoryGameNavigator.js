@@ -3,8 +3,8 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import MemoryGame from '../Memory Game/MemoryGame';
-import MemoryGameLoading from '../Memory Game/MemoryGameLoading'; // Import the LoadingScreen
+import MemoryGame from '../memoryGame/MemoryGame';
+import MemoryGameLoading from '../memoryGame/MemoryGameLoading'; // Import the LoadingScreen
 
 const Stack = createNativeStackNavigator();
 

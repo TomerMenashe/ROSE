@@ -6,7 +6,7 @@ import { firebase } from '../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { generatePhotoEscapeData } from '../games/photoEscape/PhotoEscapeGeneratingFunctions';
-import { generateFaceSwaps } from '../games/Memory Game/MemoryGameFaceSwapFunctions';
+import { generateFaceSwaps } from '../games/memoryGame/MemoryGameFaceSwapFunctions';
 
 const { height, width } = Dimensions.get('window');
 

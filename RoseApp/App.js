@@ -17,7 +17,7 @@ import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';
 import EndVideo from './EndVideo'
 import GameController from "./src/screens/GameController";
 import LoveQuestion from "./src/games/questions_and_tasks/LoveQuestion";
-import MemoryGameNavigator from "./src/games/Memory Game/MemoryGameNavigator";
+import MemoryGameNavigator from "./src/games/memoryGame/MemoryGameNavigator";
 
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
