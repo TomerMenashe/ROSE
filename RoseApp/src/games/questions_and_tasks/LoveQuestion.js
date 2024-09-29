@@ -65,8 +65,12 @@ const LoveQuestion = () => {
   }));
 
   const handleProceed = () => {
-    console.log("Going baack to GameController from LoceQuestion");
-    navigation.navigate('GameController', { pin, name, selfieURL });
+    if (!pin || !name || !selfieURL) {
+      Alert.alert('Error', 'Missing game information. Please try again.');
+      return;
+    }
+
+    navigation.navigate('PersonalQuestion', { pin, name, selfieURL });
   };
 
   return (

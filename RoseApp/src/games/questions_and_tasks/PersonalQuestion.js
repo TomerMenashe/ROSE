@@ -7,15 +7,18 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
 import * as FileSystem from 'expo-file-system';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const PersonalQuestion = () => {
   const [question, setQuestion] = useState('');
-  const [player1Answer, setPlayer1Answer] = useState('');
-  const [player2Guess, setPlayer2Guess] = useState('');
-  const [role, setRole] = useState(null); // 'Player1' or 'Player2'
+  const [subjectAnswer, setSubjectAnswer] = useState('');
+  const [guesserGuess, setGuesserGuess] = useState('');
+  const [role, setRole] = useState(null); // 'Subject' or 'Guesser'
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [subjectName, setSubjectName] = useState('');
+  const [guesserName, setGuesserName] = useState('');
+  const [processingResult, setProcessingResult] = useState(false);
 
   const fadeValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
@@ -31,36 +34,76 @@ const PersonalQuestion = () => {
       return;
     }
 
-    const roomRef = firebase.database().ref(`rooms/${pin}/personalQuestion`);
+    const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
 
-    const fetchQuestion = async () => {
+    const setupGame = async () => {
       try {
-        const storageRef = firebase.storage().ref('personal_questions_rose.txt');
-        const url = await storageRef.getDownloadURL();
-        const downloadPath = `${FileSystem.documentDirectory}personal_questions_rose.txt`;
-        const { uri } = await FileSystem.downloadAsync(url, downloadPath);
-        const content = await FileSystem.readAsStringAsync(uri);
-        const questions = content.split('\n').filter(q => q.trim() !== '');
-        const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
-        setQuestion(randomQuestion);
+        // Check if roles are already set
+        const rolesSnapshot = await roomRef.child('roles').once('value');
+        if (!rolesSnapshot.exists()) {
+          // Roles not set, set them now
+          const participantsSnapshot = await firebase.database().ref(`room/${pin}/participants`).once('value');
+          const participantsData = participantsSnapshot.val();
+          const participantNames = Object.keys(participantsData);
 
-        // Determine roles based on existing answers
-        const p1Snapshot = await roomRef.child('player1Answer').once('value');
-        if (!p1Snapshot.exists()) {
-          setRole('Player1');
+          if (participantNames.length < 2) {
+            Alert.alert('Error', 'Not enough participants.');
+            navigation.goBack();
+            return;
+          }
+
+          // Randomly assign subject and guesser
+          const shuffledNames = participantNames.sort(() => 0.5 - Math.random());
+          const [subject, guesser] = shuffledNames;
+
+          // Store in database
+          await roomRef.child('roles').set({ subjectName: subject, guesserName: guesser });
+
+          // Set local state
+          setSubjectName(subject);
+          setGuesserName(guesser);
+
+          setRole(name === subject ? 'Subject' : 'Guesser');
         } else {
-          setRole('Player2');
+          // Roles already set, get them
+          const rolesData = rolesSnapshot.val();
+          setSubjectName(rolesData.subjectName);
+          setGuesserName(rolesData.guesserName);
+
+          setRole(name === rolesData.subjectName ? 'Subject' : 'Guesser');
+        }
+
+        // Fetch or generate question
+        const questionSnapshot = await roomRef.child('question').once('value');
+        if (!questionSnapshot.exists()) {
+          // Fetch and store question
+          const storageRef = firebase.storage().ref('personal_questions_rose.txt');
+          const url = await storageRef.getDownloadURL();
+          const downloadPath = `${FileSystem.documentDirectory}personal_questions_rose.txt`;
+          const { uri } = await FileSystem.downloadAsync(url, downloadPath);
+          const content = await FileSystem.readAsStringAsync(uri);
+          const questions = content.split('\n').filter(q => q.trim() !== '');
+          const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
+
+          // Store question in database
+          await roomRef.child('question').set(randomQuestion);
+
+          // Set local state
+          setQuestion(randomQuestion);
+        } else {
+          // Question already exists
+          setQuestion(questionSnapshot.val());
         }
 
         setIsLoading(false);
       } catch (error) {
-        console.error('Error fetching question:', error);
-        Alert.alert('Error', 'Failed to fetch the question. Please try again.');
+        console.error('Error setting up game:', error);
+        Alert.alert('Error', 'Failed to set up the game. Please try again.');
         navigation.goBack();
       }
     };
 
-    fetchQuestion();
+    setupGame();
 
     // Animation setup
     fadeValue.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) });
@@ -74,20 +117,23 @@ const PersonalQuestion = () => {
     transform: [{ scale: scaleValue.value }],
   }));
 
-  const handlePlayer1Submit = async () => {
-    if (player1Answer.trim() === '') {
+
+  const handleSubjectSubmit = async () => {
+    if (subjectAnswer.trim() === '') {
       Alert.alert('Validation', 'Please enter your answer.');
       return;
     }
 
     setIsSubmitting(true);
-    const roomRef = firebase.database().ref(`rooms/${pin}/personalQuestion`);
+    const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
 
     try {
-      await roomRef.child('player1Answer').set(player1Answer.trim());
+      await roomRef.child('subjectAnswer').set({
+        name: name,
+        answer: subjectAnswer.trim(),
+      });
       Alert.alert('Success', 'Your answer has been submitted.');
       setIsSubmitting(false);
-      // Optionally, you can disable input or navigate to waiting screen
     } catch (error) {
       console.error('Error submitting answer:', error);
       Alert.alert('Error', 'Failed to submit your answer. Please try again.');
@@ -95,40 +141,20 @@ const PersonalQuestion = () => {
     }
   };
 
-  const handlePlayer2Submit = async () => {
-    if (player2Guess.trim() === '') {
+  const handleGuesserSubmit = async () => {
+    if (guesserGuess.trim() === '') {
       Alert.alert('Validation', 'Please enter your guess.');
       return;
     }
 
     setIsSubmitting(true);
-    const roomRef = firebase.database().ref(`rooms/${pin}/personalQuestion`);
+    const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
 
     try {
-      await roomRef.child('player2Guess').set(player2Guess.trim());
-
-      // Listen for both answers to be present
-      roomRef.on('value', async (snapshot) => {
-        const data = snapshot.val();
-        if (data.player1Answer && data.player2Guess) {
-          // Call backend function to get GPT comment
-          const gptComment = await fetchGptComment(question, data.player1Answer, data.player2Guess);
-
-          // Navigate to PersonalQuestionFeedback screen with all necessary data
-          navigation.navigate('PersonalQuestionFeedback', { 
-            pin, 
-            name, 
-            selfieURL, 
-            question, 
-            player1Answer: data.player1Answer, 
-            player2Guess: data.player2Guess, 
-            gptComment 
-          });
-
-          roomRef.off(); // Remove listener after navigation
-        }
+      await roomRef.child('guesserGuess').set({
+        name: name,
+        guess: guesserGuess.trim(),
       });
-
       setIsSubmitting(false);
     } catch (error) {
       console.error('Error submitting guess:', error);
@@ -137,28 +163,55 @@ const PersonalQuestion = () => {
     }
   };
 
-  // Function to call backend and fetch GPT comment
-  const fetchGptComment = async (question, answer1, answer2) => {
-    try {
-      const response = await fetch('https://your-backend-endpoint.com/generate-comment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ question, answer1, answer2 }),
-      });
+  useEffect(() => {
+    const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch GPT comment.');
+    const onDataChange = async (snapshot) => {
+      const data = snapshot.val();
+      if (data.subjectAnswer && data.guesserGuess && !processingResult) {
+        setProcessingResult(true);
+        try {
+          // Call backend function to get GPT comment
+          const getPersonalQuestionFeedback = firebase.functions().httpsCallable('getPersonalQuestionFeedback');
+
+          const response = await getPersonalQuestionFeedback({
+            subjectName: data.subjectAnswer.name,
+            subjectAnswer: data.subjectAnswer.answer,
+            guesserName: data.guesserGuess.name,
+            guesserGuess: data.guesserGuess.guess,
+            question: data.question || question,
+          });
+
+          const gptComment = response.data.comment;
+
+          // Navigate to PersonalQuestionFeedback screen with all necessary data
+          navigation.navigate('PersonalQuestionFeedback', {
+            pin,
+            name,
+            selfieURL,
+            question: data.question || question,
+            subjectName: data.subjectAnswer.name,
+            subjectAnswer: data.subjectAnswer.answer,
+            guesserName: data.guesserGuess.name,
+            guesserGuess: data.guesserGuess.guess,
+            gptComment,
+          });
+
+          roomRef.off('value', onDataChange);
+        } catch (error) {
+          console.error('Error fetching GPT comment:', error);
+          Alert.alert('Error', 'Failed to fetch feedback. Please try again.');
+          setProcessingResult(false);
+        }
       }
+    };
 
-      const data = await response.json();
-      return data.comment;
-    } catch (error) {
-      console.error('Error fetching GPT comment:', error);
-      return 'What a fascinating exchange of thoughts!';
-    }
-  };
+    roomRef.on('value', onDataChange);
+
+    return () => {
+      roomRef.off('value', onDataChange);
+    };
+  }, [pin, question, processingResult, name, selfieURL, navigation]);
 
   return (
     <KeyboardAvoidingView
@@ -170,20 +223,23 @@ const PersonalQuestion = () => {
       ) : (
         <>
           <Animated.View style={[styles.textContainer, animatedStyle]}>
+            <Text style={styles.questionText}>
+              {`Question for ${subjectName}:`}
+            </Text>
             <Text style={styles.questionText}>{question}</Text>
           </Animated.View>
 
-          {role === 'Player1' ? (
+          {role === 'Subject' ? (
             <>
               <TextInput
                 style={styles.input}
                 placeholder="Enter your answer..."
                 placeholderTextColor="#CCCCCC"
-                value={player1Answer}
-                onChangeText={setPlayer1Answer}
+                value={subjectAnswer}
+                onChangeText={setSubjectAnswer}
                 multiline
               />
-              <TouchableOpacity style={styles.button} onPress={handlePlayer1Submit} disabled={isSubmitting}>
+              <TouchableOpacity style={styles.button} onPress={handleSubjectSubmit} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
@@ -195,13 +251,13 @@ const PersonalQuestion = () => {
             <>
               <TextInput
                 style={styles.input}
-                placeholder="Enter your guess..."
+                placeholder={`Guess ${subjectName}'s answer...`}
                 placeholderTextColor="#CCCCCC"
-                value={player2Guess}
-                onChangeText={setPlayer2Guess}
+                value={guesserGuess}
+                onChangeText={setGuesserGuess}
                 multiline
               />
-              <TouchableOpacity style={styles.button} onPress={handlePlayer2Submit} disabled={isSubmitting}>
+              <TouchableOpacity style={styles.button} onPress={handleGuesserSubmit} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
@@ -215,6 +271,7 @@ const PersonalQuestion = () => {
     </KeyboardAvoidingView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

@@ -121,8 +121,8 @@ const GameController = () => {
           params: { pin, name, selfieURL },
         });
         break;
-      case 'LoveQuestion':
-        navigation.navigate('LoveQuestion', { pin, name, selfieURL });
+      case 'QuestionsAndTasks':
+        navigation.navigate('QuestionsAndTasks', { pin, name, selfieURL });
         break;
       case 'MemoryGame':
         navigation.navigate('MemoryGame', {
