@@ -1,5 +1,4 @@
 // /src/screens/EndVideo.js
-
 import React, { useEffect, useState } from 'react';
 import {
     View,
@@ -10,6 +9,7 @@ import {
     Alert,
     Platform,
     ActivityIndicator,
+    Image,
 } from 'react-native';
 import { firebase } from './src/firebase/firebase'; // Adjust the path as necessary
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -27,7 +27,7 @@ const EndVideo = () => {
     const [fadeAnim] = useState(new Animated.Value(0));
     const [isPlaying, setIsPlaying] = useState(true);
     const [downloadAllPressed, setDownloadAllPressed] = useState(false);
-    const [isLoading, setIsLoading] = useState(false); // Loading state for "Download All"
+    const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
         if (!pin) {
@@ -242,62 +242,58 @@ const EndVideo = () => {
         setCurrentImageIndex(0);
         setIsPlaying(true);
     };
-
     return (
         <View style={styles.container}>
-            {/* Always show the "Download All Images" button at the top */}
-            <TouchableOpacity
-                style={styles.downloadAllButton}
-                onPress={downloadAllImages}
-                disabled={downloadAllPressed || isLoading} // Disable when loading
-            >
-                <Text style={styles.buttonText}>
-                    {isLoading ? 'Downloading...' : 'Download All Images'}
-                </Text>
-            </TouchableOpacity>
+            {/* Thank you message always visible above the gif */}
+            <Text style={styles.thankYouText}>
+                Thank you for playing with us, you two beautiful souls
+            </Text>
 
-            {/* Show loading spinner and message if downloading all */}
-            {isLoading && (
-                <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#FFCC00" />
-                    <Text style={styles.loadingText}>Downloading all images...</Text>
-                </View>
-            )}
+            {/* Gif positioned above the image frame */}
+            <Image
+                source={require('./assets/rose.gif')}
+                style={styles.gif}
+                resizeMode="contain"
+            />
 
-            {/* Display the current image with download option */}
+            {/* Display the current image with download options */}
             {imageUrls.length > 0 && isPlaying && (
                 <View style={styles.imageContainer}>
-                    <Animated.Image
-                        source={{ uri: imageUrls[currentImageIndex] }}
-                        style={[styles.image, { opacity: fadeAnim }]}
-                        resizeMode="contain"
-                        onError={(error) => {
-                            console.error('Image Load Error:', error.nativeEvent.error);
-                            Alert.alert('Error', 'Failed to load an image.');
-                        }}
-                    />
+                    <View style={styles.imageFrame}>
+                        <Animated.Image
+                            source={{ uri: imageUrls[currentImageIndex] }}
+                            style={[styles.image, { opacity: fadeAnim }]}
+                            resizeMode="contain"
+                        />
+                    </View>
                     <TouchableOpacity
-                        style={styles.downloadButton}
+                        style={[styles.downloadButton, styles.enhancedButton]}
                         onPress={() => downloadImage(imageUrls[currentImageIndex])}
-                        disabled={isLoading} // Optionally disable when downloading all
+                        disabled={isLoading}
                     >
                         <Text style={styles.buttonText}>Download Image</Text>
                     </TouchableOpacity>
-                </View>
-            )}
 
-            {/* Display "Watch Video Again" button when animations are done */}
-            {!isPlaying && (
-                <View style={styles.buttonContainer}>
-                    <TouchableOpacity style={styles.mainButton} onPress={watchVideoAgain}>
-                        <Text style={styles.buttonText}>Watch Video Again</Text>
+                    {/* "Download All Images" button below "Download Image" button */}
+                    <TouchableOpacity
+                        style={[styles.downloadAllButton, styles.enhancedButton]}
+                        onPress={downloadAllImages}
+                        disabled={downloadAllPressed || isLoading}
+                    >
+                        <Text style={styles.buttonText}>
+                            {isLoading ? 'Downloading...' : 'Download All Images'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             )}
 
-            {/* Show message if no images are available */}
-            {imageUrls.length === 0 && !isPlaying && (
-                <Text style={styles.loadingText}>No images available.</Text>
+            {/* "Watch Video Again" button */}
+            {!isPlaying && (
+                <View style={styles.buttonContainer}>
+                    <TouchableOpacity style={[styles.mainButton, styles.enhancedButton]} onPress={watchVideoAgain}>
+                        <Text style={styles.buttonText}>Watch Video Again</Text>
+                    </TouchableOpacity>
+                </View>
             )}
         </View>
     );
@@ -307,43 +303,47 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#101010',
-        justifyContent: 'flex-start', // Align items from the top
+        justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
     },
     downloadAllButton: {
-        backgroundColor: '#4CAF50',
         padding: 15,
-        borderRadius: 5,
-        width: '100%',
+        borderRadius: 25,
+        width: '80%',
         alignItems: 'center',
-        marginBottom: 20,
-    },
-    loadingContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 20,
+        marginTop: 10,
     },
     imageContainer: {
         alignItems: 'center',
-        flex: 1, // Take up available space
         justifyContent: 'center',
     },
     image: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 10,
+    },
+    imageFrame: {
         width: 300,
         height: 300,
+        borderWidth: 4,
+        borderColor: '#FF4B4B',
+        borderRadius: 15,
+        padding: 10,
+        backgroundColor: '#000',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: -10, // Adjusted to make sure it touches the bottom of the gif
     },
     downloadButton: {
         marginTop: 10,
-        backgroundColor: '#FF4B4B',
         padding: 10,
         borderRadius: 5,
     },
     mainButton: {
         marginVertical: 10,
-        backgroundColor: '#FFCC00',
         padding: 15,
-        borderRadius: 5,
+        borderRadius: 25,
         width: '80%',
         alignItems: 'center',
     },
@@ -352,15 +352,34 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         width: '100%',
     },
+    enhancedButton: {
+        backgroundColor: '#FF4B4B',
+        borderColor: '#000000',
+        borderWidth: 2,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
     buttonText: {
-        color: '#101010',
+        color: '#FFFFFF',
         fontSize: 16,
         fontWeight: 'bold',
+        fontFamily: 'sans-serif-condensed', // More stylish font
     },
-    loadingText: {
-        color: '#FFCC00',
-        fontSize: 18,
-        marginLeft: 10,
+    thankYouText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        fontFamily: 'cursive', // Beautiful font style
+        textAlign: 'center',
+        marginBottom: 5, // Positioned just above the gif
+    },
+    gif: {
+        width: 150,
+        height: 150,
+        marginBottom: -15, // Positioned exactly on top of the image frame
     },
 });
 
