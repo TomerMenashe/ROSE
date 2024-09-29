@@ -105,6 +105,7 @@ const PhotoEscapeCameraScreen = () => {
                 const downloadURL = await snapshot.ref.getDownloadURL();
 
                 await roomRef.child('winner').set({ image: downloadURL, name, selfieURL });
+                await roomRef.child('winnerPhotos').push({ image: downloadURL});
                 // The listener will handle navigation
             } else {
                 setPhoto(null);

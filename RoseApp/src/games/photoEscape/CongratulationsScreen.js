@@ -4,15 +4,19 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {generatePhotoEscapeData} from "./PhotoEscapeGeneratingFunctions";
+import {firebase} from "../../firebase/firebase";
 
 const CongratulationsScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { item, winnerImage, name, selfieURL, pin } = route.params;
+    const roomRef = firebase.database().ref(`room/${pin}`);
 
-    const moveToNextGame = () => {
+
+    const moveToNextGame = async () => {
         generatePhotoEscapeData(pin);
-        navigation.navigate('GameController', { pin, name, selfieURL });
+        roomRef.child('winner').remove();
+        navigation.navigate('GameController', {pin, name, selfieURL});
     };
 
     return (
