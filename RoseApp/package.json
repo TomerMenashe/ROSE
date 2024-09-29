@@ -26,6 +26,7 @@
     "expo-status-bar": "~1.12.1",
     "express": "^4.21.0",
     "firebase": "^10.13.2",
+    "p-limit": "^6.1.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.74.5",

@@ -6,6 +6,7 @@ const segmindApiKey = functions.config().segmind.api_key;
 const items = ["bra", "headphones", "condom", "thong", "toothbrush", "laptop", "tv remote", "tomato", "toilet brush"];
 const crypto = require('crypto');
 const { URL } = require('url');
+const pLimit = require('p-limit');
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
@@ -97,8 +98,10 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
 
     // Fetch the images from the provided URLs
     console.log("Fetching source images...");
-    const sourceImage1Response = await axios.get(faceImageUrl1, { responseType: "arraybuffer" });
-    const sourceImage2Response = await axios.get(faceImageUrl2, { responseType: "arraybuffer" });
+    const [sourceImage1Response, sourceImage2Response] = await Promise.all([
+      axios.get(faceImageUrl1, { responseType: "arraybuffer" }),
+      axios.get(faceImageUrl2, { responseType: "arraybuffer" })
+    ]);
 
     // Convert images to base64
     const sourceImage1 = encodeImage(sourceImage1Response.data);
@@ -107,25 +110,39 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
 
     // Get list of target images from 'FaceSwapTargets' folder in Firebase Storage
     const bucket = storage.bucket();
-    const [files] = await bucket.getFiles({ prefix: "FaceSwapTargets/" });
+    const [allFiles] = await bucket.getFiles({ prefix: "FaceSwapTargets/" });
 
-    if (files.length < 8) {
+    if (allFiles.length < 8) {
       throw new Error("Not enough target images available.");
     }
 
-    // Select 8 random images from the FaceSwapTargets folder
-    const selectedImages = files.sort(() => 0.5 - Math.random()).slice(0, 8);
+    // Function to shuffle array using Fisher-Yates
+    function fisherYatesShuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    // Shuffle and select 8 unique target images
+    const shuffledFiles = fisherYatesShuffle(allFiles.filter(file => !existingUrl1Set.has(`FaceSwapTargets/${file.name}`)));
+    if (shuffledFiles.length < 8) {
+      throw new Error("Not enough unique target images available.");
+    }
+    const selectedImages = shuffledFiles.slice(0, 8);
     console.log(`Selected ${selectedImages.length} target images.`);
 
+    const limit = pLimit(5); // Limit concurrency to 5
     const results = [];
 
-    // Process face swaps for each selected image
-    for (let i = 0; i < selectedImages.length; i++) {
+    // Process face swaps in parallel with limited concurrency
+    const swapPromises = selectedImages.map((file, index) => limit(async () => {
       try {
-        console.log(`Processing face swap ${i + 1} of ${selectedImages.length}...`);
-        const targetImageBuffer = await selectedImages[i].download();
+        console.log(`Processing face swap ${index + 1} of ${selectedImages.length} for file ${file.name}...`);
+        const targetImageBuffer = await file.download();
         const targetImage = encodeImage(targetImageBuffer[0]);
-        console.log(`Target image ${i + 1} downloaded and encoded.`);
+        console.log(`Target image ${index + 1} downloaded and encoded.`);
 
         // Prepare payloads for the API call
         const data1 = {
@@ -146,7 +163,7 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
         };
 
         // API calls
-        console.log("Calling MemoryGame API for both sources...");
+        console.log(`Calling MemoryGame API for target image ${file.name}...`);
         const [response1, response2] = await Promise.all([
           axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": segmindApiKey } }),
           axios.post("https://api.segmind.com/v1/faceswap-v2", data2, { headers: { "x-api-key": segmindApiKey } }),
@@ -157,25 +174,27 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
           const buffer2 = Buffer.from(response2.data.image, "base64");
 
           // Generate deterministic filenames
-          const targetImageName = selectedImages[i].name;
+          const targetImageName = file.name;
           const uniqueId1 = crypto.createHash('md5').update(faceImageUrl1 + targetImageName).digest('hex');
           const uniqueId2 = crypto.createHash('md5').update(faceImageUrl2 + targetImageName).digest('hex');
 
           const filePath1 = `room/${pin}/faceSwaps/${uniqueId1}_1.jpg`;
           const filePath2 = `room/${pin}/faceSwaps/${uniqueId2}_2.jpg`;
 
-          const file1 = bucket.file(filePath1);
-          const file2 = bucket.file(filePath2);
-
           // Check if filePath1 already exists
           if (existingUrl1Set.has(filePath1)) {
             console.log(`File path ${filePath1} already exists. Skipping push for this pair.`);
-            continue; // Skip to the next iteration
+            return null; // Skip this pair
           }
 
+          const file1 = bucket.file(filePath1);
+          const file2 = bucket.file(filePath2);
+
           console.log(`Saving swapped images to storage: ${filePath1}, ${filePath2}`);
-          await file1.save(buffer1, { contentType: "image/jpeg" });
-          await file2.save(buffer2, { contentType: "image/jpeg" });
+          await Promise.all([
+            file1.save(buffer1, { contentType: "image/jpeg" }),
+            file2.save(buffer2, { contentType: "image/jpeg" }),
+          ]);
 
           const [downloadURL1, downloadURL2] = await Promise.all([
             file1.getSignedUrl({ action: "read", expires: "03-01-2500" }),
@@ -191,29 +210,36 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
             url1: [finalURL1], // Store as an array
             url2: [finalURL2], // Store as an array
           });
-          console.log(`FaceSwap entry ${i + 1} saved to database.`);
+          console.log(`FaceSwap entry ${index + 1} saved to database.`);
 
           // Add the new filePath1 to the Set to prevent duplicates within this run
           existingUrl1Set.add(filePath1);
 
-          results.push({ url1: [finalURL1], url2: [finalURL2] }); // Add results as arrays
+          return { url1: [finalURL1], url2: [finalURL2] }; // Add results as arrays
         } else {
           throw new Error("MemoryGame API did not return both images.");
         }
       } catch (iterationError) {
-        console.error(`Error processing face swap ${i + 1}:`, iterationError);
+        console.error(`Error processing face swap for file ${file.name}:`, iterationError);
         throw iterationError;
       }
+    }));
+
+    const swapResults = await Promise.all(swapPromises);
+    // Filter out any null results (duplicates)
+    const successfulResults = swapResults.filter(result => result !== null);
+
+    if (successfulResults.length < 8) {
+      throw new Error(`Only ${successfulResults.length} unique face swaps were processed.`);
     }
 
     console.log("All face swaps processed successfully.");
-    return { results };
+    return { results: successfulResults };
   } catch (error) {
     console.error("swapFaces Error:", error);
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
-// eslint-disable-next-line no-unused-vars
 exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
   return items[Math.floor(Math.random() * items.length)];
 });
