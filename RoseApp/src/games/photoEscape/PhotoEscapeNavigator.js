@@ -7,8 +7,8 @@ import PhotoEscapeLimerickScreen from './PhotoEscapeLimerickScreen';
 import PhotoEscapeCameraScreen from './PhotoEscapeCameraScreen';
 import CongratulationsScreen from './CongratulationsScreen';
 import LoserScreen from './LoserScreen';
-import MemoryGame from '../Memory Game/MemoryGame';
-import LoadingScreen from '../Memory Game/LoadingScreen'; // Import the LoadingScreen
+import PhotoEscapeLoadingScreen from "./PhotoEscapeLoadingScreen";
+
 
 const Stack = createNativeStackNavigator();
 
@@ -36,13 +36,10 @@ const PhotoEscapeNavigator = () => {
                 component={LoserScreen}
             />
             <Stack.Screen
-                name="LoadingScreen" // Add LoadingScreen to the navigator
-                component={LoadingScreen}
+                name="PhotoEscapeLoadingScreen"
+                component={PhotoEscapeLoadingScreen}
             />
-            <Stack.Screen
-                name="FaceSwap"
-                component={MemoryGame}
-            />
+
         </Stack.Navigator>
     );
 };

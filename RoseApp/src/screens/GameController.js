@@ -1,70 +1,178 @@
-import React, { useEffect } from 'react';
-import { Alert } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+// GameController.js
+
+import React, { useEffect, useState } from 'react';
+import { Alert, ActivityIndicator, View, Text } from 'react-native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { GAME_FLOW } from '../gameFlow';
 import { firebase } from '../firebase/firebase';
 
-const GameController = ({ pin, name, selfieURL }) => {
+const GameController = () => {
   const navigation = useNavigation();
+  const route = useRoute();
 
+  const { pin, name, selfieURL } = route.params || {};
+
+  const roomRef = firebase.database().ref(`room/${pin}`);
+
+  const [currentGameIndex, setCurrentGameIndex] = useState(null);
+  const [isWaiting, setIsWaiting] = useState(true);
+  const [hasNavigated, setHasNavigated] = useState(false);
+
+  // Check if `currentGameIndex` exists; if not, create it and set to 0
   useEffect(() => {
-    const roomRef = firebase.database().ref(`room/${pin}`);
-
-    const gameListener = roomRef.on('value', async (snapshot) => {
-      const gameState = snapshot.val();
-      if (gameState) {
-        const { currentGameIndex, gameStarted } = gameState;
-
-        if (!gameStarted) {
-          // Game has not started yet
-          return;
-        }
-
-        if (currentGameIndex === undefined || currentGameIndex === null) {
-          // Initialize currentGameIndex
-          await roomRef.update({ currentGameIndex: 0 });
-          return;
-        }
-
-        const nextGame = GAME_FLOW[currentGameIndex];
-
-        if (nextGame) {
-          switch (nextGame) {
-            case 'PhotoEscape':
-              navigation.navigate('PhotoEscape', {
-                screen: 'PhotoEscapeLoadingScreen',
-                params: { pin, name, selfieURL },
-              });
-              break;
-            case 'LoveQuestions':
-              navigation.navigate('LoveQuestions', { pin, name, selfieURL });
-              break;
-            case 'FaceSwap':
-              navigation.navigate('FaceSwap', {  // Updated to match 'FaceSwap' in App.js
-                screen: 'LoadingScreen',
-                params: { pin, name, selfieURL },
-              });
-              break;
-            // Add more cases as you add more games
-            default:
-              console.error(`Unknown game in GAME_FLOW: ${nextGame}`);
-              Alert.alert('Error', `Unknown game: ${nextGame}`);
-          }
-        } else {
-          console.log('All games in GAME_FLOW have been played.');
-          Alert.alert('Congratulations!', 'All game rounds have been completed.');
-          // Optionally, reset the game flow or navigate to a final summary screen
-          // navigation.navigate('FinalSummary', { pin });
-        }
+    roomRef.child('currentGameIndex').once('value', (snapshot) => {
+      if (snapshot.exists()) {
+        setCurrentGameIndex(snapshot.val());
+      } else {
+        roomRef.child('currentGameIndex').set(0);
+        setCurrentGameIndex(0);
       }
     });
+  }, []);
+
+  // Update `playersInGameControl` every time the screen is focused
+  useFocusEffect(
+      React.useCallback(() => {
+        const userRef = roomRef.child('playersInGameControl').child(name);
+        userRef.set(true);
+
+        // Clean up when the screen is unfocused
+        return () => {
+          userRef.remove();
+        };
+      }, [name, roomRef])
+  );
+
+  // Listener for `playersInGameControl` to determine when there are two players
+  useEffect(() => {
+    const playersRef = roomRef.child('playersInGameControl');
+
+    const onValueChange = (snapshot) => {
+      const players = snapshot.val();
+      const numPlayers = players ? Object.keys(players).length : 0;
+
+      if (numPlayers >= 2 && currentGameIndex !== null && !hasNavigated) {
+        setIsWaiting(false);
+      } else {
+        setIsWaiting(true);
+      }
+    };
+
+    playersRef.on('value', onValueChange);
+
+    // Clean up the listener when component unmounts
+    return () => {
+      playersRef.off('value', onValueChange);
+    };
+  }, [currentGameIndex, hasNavigated]);
+
+  // Listener for `currentGameIndex` to reset `hasNavigated`
+  useEffect(() => {
+    const currentGameIndexRef = roomRef.child('currentGameIndex');
+
+    const onValueChange = (snapshot) => {
+      const value = snapshot.val();
+      setCurrentGameIndex(value);
+      setHasNavigated(false);
+    };
+
+    currentGameIndexRef.on('value', onValueChange);
 
     return () => {
-      roomRef.off('value', gameListener);
+      currentGameIndexRef.off('value', onValueChange);
     };
-  }, [pin, navigation, name, selfieURL]);
+  }, []);
 
-  return null; // This component doesn't render anything visible
+  // Navigate to next game when ready
+  useEffect(() => {
+    if (!isWaiting && !hasNavigated && currentGameIndex !== null) {
+      console.log('[GameController] Ready for navigation.');
+
+      const nextGame = GAME_FLOW[currentGameIndex];
+
+      if (nextGame) {
+        navigateToNextScreen(nextGame);
+        setHasNavigated(true);
+
+        // Increase `currentGameIndex` by 0.5 from each user
+        roomRef.child('currentGameIndex').transaction((currentValue) => {
+          return (currentValue || 0) + 0.5;
+        });
+
+        // Clean `playersInGameControl`
+        roomRef.child('playersInGameControl').remove();
+      } else {
+        console.error(`[GameController] Unknown game in GAME_FLOW: ${nextGame}`);
+        Alert.alert('Error', `Unknown game: ${nextGame}`);
+      }
+    }
+  }, [isWaiting, hasNavigated, currentGameIndex]);
+
+  const navigateToNextScreen = (nextGame) => {
+    switch (nextGame) {
+      case 'PhotoEscape':
+        navigation.navigate('PhotoEscape', {
+          screen: 'PhotoEscapeLoadingScreen',
+          params: { pin, name, selfieURL },
+        });
+        break;
+      case 'LoveQuestion':
+        navigation.navigate('LoveQuestion', { pin, name, selfieURL });
+        break;
+      case 'MemoryGame':
+        navigation.navigate('MemoryGame', {
+          screen: 'MemoryGameLoading',
+          params: { pin, name, selfieURL },
+        });
+        break;
+      case 'EndVideo':
+        navigation.navigate('EndVideo', { pin, name, selfieURL });
+        break;
+      default:
+        console.error(`[GameController] Unknown game in GAME_FLOW: ${nextGame}`);
+        Alert.alert('Error', `Unknown game: ${nextGame}`);
+    }
+  };
+
+  if (isWaiting) {
+    return (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#FFFFFF" />
+          <Text style={styles.loaderText}>Waiting for the second player to join...</Text>
+        </View>
+    );
+  }
+
+  return (
+      <View style={styles.debugContainer}>
+        <Text style={styles.debugText}>Not waiting. Ready for navigation.</Text>
+      </View>
+  );
+};
+
+const styles = {
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+  },
+  loaderText: {
+    color: '#FFFFFF',
+    marginTop: 20,
+    fontSize: 18,
+  },
+  debugContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#101010',
+  },
+  debugText: {
+    color: '#FFCC00',
+    fontSize: 18,
+    textAlign: 'center',
+  },
 };
 
 export default GameController;

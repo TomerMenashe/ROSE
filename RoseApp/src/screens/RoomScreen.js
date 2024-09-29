@@ -6,7 +6,7 @@ import { firebase } from '../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { generatePhotoEscapeData } from '../games/photoEscape/PhotoEscapeGeneratingFunctions';
-import { generateFaceSwaps } from '../games/Memory Game/FaceSwapHandling';
+import { generateFaceSwaps } from '../games/Memory Game/MemoryGameFaceSwapFunctions';
 
 const { height, width } = Dimensions.get('window');
 
@@ -17,6 +17,7 @@ const RoomScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
   const { pin, name, selfieURL } = route.params || {}; // Get the pin, name, and selfieURL from route params
+
 
   // Initialize Firebase functions
   const functions = getFunctions(firebase.app(), 'us-central1');
@@ -29,8 +30,10 @@ const RoomScreen = () => {
   useEffect(() => {
     if (!pin) {
       Alert.alert('Error', 'No game PIN provided.');
+      console.error('[RoomScreen] No game PIN provided.');
       return;
     }
+
 
     const roomRef = firebase.database().ref(`room/${pin}`);
 
@@ -40,6 +43,7 @@ const RoomScreen = () => {
         const participantsData = snapshot.val();
         const participantsList = Object.values(participantsData);
         setParticipants(participantsList);
+
 
         if (participantsList.length === 1 && !alreadyGeneratedItemRef.current) {
           alreadyGeneratedItemRef.current = true;
@@ -59,9 +63,18 @@ const RoomScreen = () => {
 
           if (!faceSwapCallRef.current && roomCreator.current) {
             faceSwapCallRef.current = true;
-            console.log("Called generating faceSwap");
+            console.log("RoomScreen: Called generating faceSwap");
             generateFaceSwaps(participantsList, pin);
           }
+
+          // Set 'gameStarted' to true in Firebase
+          roomRef.update({ gameStarted: true })
+              .then(() => {
+              })
+              .catch((error) => {
+                console.error('[RoomScreen] Error setting gameStarted:', error);
+                Alert.alert('Error', 'Failed to start the game.');
+              });
 
           // Start the 5-second countdown only once
           if (countdown === null) {
@@ -85,11 +98,8 @@ const RoomScreen = () => {
     if (countdown > 0) {
       timerId = setTimeout(() => setCountdown(countdown - 1), 1000);
     } else if (countdown === 0) {
-      // Navigate to the Limerick screen once countdown reaches zero
-      navigation.navigate('PhotoEscape', {
-        screen: 'PhotoEscapeLimerick',
-        params: { pin, name, selfieURL },
-      });
+      // Corrected navigation call: pass parameters directly
+      navigation.navigate('GameController', { pin, name, selfieURL });
     }
 
     return () => clearTimeout(timerId);

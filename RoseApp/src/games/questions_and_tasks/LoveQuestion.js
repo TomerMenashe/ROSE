@@ -11,7 +11,7 @@ const LoveQuestion = () => {
   const [question, setQuestion] = useState('');
   const navigation = useNavigation();
   const route = useRoute();
-  const { pin } = route.params; // Updated to receive 'pin' instead of 'roomId'
+  const { pin, name, selfieURL } = route.params || {};
   const fadeValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,7 +65,8 @@ const LoveQuestion = () => {
   }));
 
   const handleProceed = () => {
-    navigation.navigate('NextAdventureScreen'); // Replace with the actual screen name
+    console.log("Going baack to GameController from LoceQuestion");
+    navigation.navigate('GameController', { pin, name, selfieURL });
   };
 
   return (

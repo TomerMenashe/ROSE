@@ -15,7 +15,9 @@ import CreateGameScreen from './src/screens/CreateGameScreen';
 import RoomScreen from './src/screens/RoomScreen';
 import PhotoEscapeNavigator from './src/games/photoEscape/PhotoEscapeNavigator';
 import EndVideo from './EndVideo'
-import MemoryGame from './src/games/Memory Game/MemoryGame';
+import GameController from "./src/screens/GameController";
+import LoveQuestion from "./src/games/questions_and_tasks/LoveQuestion";
+import MemoryGameNavigator from "./src/games/Memory Game/MemoryGameNavigator";
 
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
@@ -104,12 +106,23 @@ export default function App() {
         <MainStack.Screen
           name="EndVideo"
           component={EndVideo}
-          options={{ title: 'EndVideo' }}
+          options={{ headerShown: false }}
         />
 
         <MainStack.Screen
-          name="FaceSwap"
-          component={MemoryGame}
+          name="GameController"
+          component={GameController}
+          options={{ headerShown: false }}
+        />
+        <MainStack.Screen
+            name="LoveQuestion"
+            component={LoveQuestion}
+            options={{ headerShown: false }}
+        />
+        <MainStack.Screen
+            name="MemoryGame"
+            component={MemoryGameNavigator}
+            options={{ headerShown: false }}
         />
       </MainStack.Navigator>
     </NavigationContainer>

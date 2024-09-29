@@ -12,7 +12,7 @@ const CongratulationsScreen = () => {
 
     const moveToNextGame = () => {
         generatePhotoEscapeData(pin);
-        navigation.navigate('LoadingScreen', { pin, name, selfieURL });
+        navigation.navigate('GameController', { pin, name, selfieURL });
     };
 
     return (

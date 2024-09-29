@@ -1,50 +1,30 @@
-// PhotoEscapeLimerickScreen.js
+// /src/screens/PhotoEscapeLimerickScreen.js
 
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
-import { fetchLimerick, fetchItem } from './PhotoEscapeGeneratingFunctions';
+
 
 const PhotoEscapeLimerickScreen = () => {
     const navigation = useNavigation();
     const route = useRoute();
-    const { pin, name, selfieURL } = route.params || {};
-    const [limerick, setLimerick] = useState('');
-    const [item, setItem] = useState('');
-    const [isLoading, setIsLoading] = useState(true);
+    const { pin, name, selfieURL, item, limerick } = route.params || {}; // Destructure item and limerick from route.params
+    const [isLoading, setIsLoading] = useState(false); // Initialize as false since data is already fetched
 
     useEffect(() => {
-        if (!pin || !name || !selfieURL) {
-            console.error('[PhotoEscapeLimerickScreen] Missing game information:', { pin, name, selfieURL });
+        // Check if all necessary parameters are present
+        if (!pin || !name || !selfieURL || !item || !limerick) {
+            console.error('[PhotoEscapeLimerickScreen] Missing game information:', { pin, name, selfieURL, item, limerick });
             Alert.alert('Error', 'Missing game information.');
             navigation.goBack();
             return;
         }
 
-        const fetchData = async () => {
-            try {
-                const [fetchedItem, fetchedLimerick] = await Promise.all([
-                    fetchItem(pin),
-                    fetchLimerick(pin),
-                ]);
+        // No need to fetch data; data is already passed via navigation
+        setIsLoading(false); // Ensure loading state is false
 
-                if (fetchedItem && fetchedLimerick) {
-                    setItem(fetchedItem);
-                    setLimerick(fetchedLimerick);
-                    setIsLoading(false);
-                } else {
-                    throw new Error('Failed to fetch item or limerick');
-                }
-            } catch (error) {
-                console.error('[PhotoEscapeLimerickScreen] Error fetching data:', error);
-                Alert.alert('Error', 'An error occurred while fetching limerick and item.');
-                navigation.goBack();
-            }
-        };
-
-        fetchData();
-
+        // Setup Firebase listener for winner updates
         const roomRef = firebase.database().ref(`room/${pin}`);
 
         const winnerListener = roomRef.child('winner').on('value', (snapshot) => {
@@ -70,7 +50,6 @@ const PhotoEscapeLimerickScreen = () => {
                         pin,
                     });
                 }
-            } else {
             }
         });
 
@@ -78,21 +57,13 @@ const PhotoEscapeLimerickScreen = () => {
         return () => {
             roomRef.child('winner').off('value', winnerListener);
         };
-    }, [pin, name, selfieURL, navigation]);
+    }, [pin, name, selfieURL, item, limerick, navigation]);
 
     const handleStart = () => {
         navigation.navigate('PhotoEscapeCamera', { pin, name, selfieURL, limerick, item });
     };
 
-    if (isLoading) {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF4B4B" />
-                <Text style={styles.loadingText}>Loading limerick...</Text>
-            </View>
-        );
-    }
-
+    // Since data is already fetched, no need to display loading indicator
     return (
         <View style={styles.container}>
             <Text style={styles.title}>Your Limerick</Text>
@@ -105,22 +76,13 @@ const PhotoEscapeLimerickScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    loadingContainer: {
-        flex: 1,
-        backgroundColor: '#101010',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    loadingText: {
-        color: '#FFFFFF',
-        marginTop: 10,
-        fontSize: 16,
-    },
+    // Removed loadingContainer and loadingText styles as they are no longer needed
     container: {
         flex: 1,
         backgroundColor: '#101010',
         padding: 20,
         justifyContent: 'center',
+        alignItems: 'center', // Added to center content horizontally
     },
     title: {
         fontSize: 32,

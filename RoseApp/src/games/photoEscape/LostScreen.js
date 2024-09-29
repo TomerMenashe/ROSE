@@ -10,7 +10,7 @@ const LostScreen = () => {
     const { name, selfieURL } = route.params;
 
     const handleBackToHome = () => {
-        navigation.navigate('TestFaceSwap', { name, selfieURL });
+        navigation.navigate('GameController', { pin, name, selfieURL });
     };
 
     return (

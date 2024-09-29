@@ -11,7 +11,7 @@ const LoserScreen = () => {
     const { item, name, selfieURL, pin, winnerImage } = route.params;
 
     const moveToNextGame = () => {
-        navigation.navigate('LoadingScreen', { pin, name, selfieURL });
+        navigation.navigate('GameController', { pin, name, selfieURL });
     };
 
 

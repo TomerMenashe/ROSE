@@ -18,8 +18,8 @@ const { width } = Dimensions.get('window');
 
 const MemoryGame = () => {
     const navigation = useNavigation();
-    const route = useRoute();
-    const { pin, name } = route.params || {};
+    const route = useRoute()
+    const { pin, name, selfieURL } = route.params || {};
 
     // Game state variables
     const [cards, setCards] = useState([]);
@@ -73,7 +73,7 @@ const MemoryGame = () => {
                 if (gameState.gameOver && !gameOver) {
                     const winner = determineWinner(gameState.playerScores);
                     Alert.alert('Game Over', `${winner} wins!`, [
-                        { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) },
+                        { text: 'OK', onPress: () => navigation.navigate('GameController', { pin, name, selfieURL }) },
                     ]);
                 }
 
@@ -101,7 +101,7 @@ const MemoryGame = () => {
                 if (gameState.gameOver && !gameOver) {
                     const winner = determineWinner(gameState.playerScores);
                     Alert.alert('Game Over', `${winner} wins!`, [
-                        { text: 'OK', onPress: () => navigation.navigate('EndVideo', { pin }) },
+                        { text: 'OK', onPress: () => navigation.navigate('GameController', { pin, name, selfieURL }) },
                     ]);
                 }
 

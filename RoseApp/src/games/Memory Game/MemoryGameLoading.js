@@ -1,11 +1,11 @@
-// /src/screens/LoadingScreen.js
+// /src/screens/MemoryGameLoading.js
 
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { firebase } from '../../firebase/firebase'; // Adjust the path as necessary
 import { useNavigation, useRoute } from '@react-navigation/native';
 
-const LoadingScreen = () => {
+const MemoryGameLoading = () => {
     const navigation = useNavigation();
     const route = useRoute();
     const { pin, name, selfieURL } = route.params || {};
@@ -88,7 +88,7 @@ const LoadingScreen = () => {
                         await prefetchImages(imageUrls);
 
                         // Navigate to the MemoryGame screen
-                        navigation.replace('FaceSwap', { pin, name, selfieURL });
+                        navigation.replace('MemoryGame', { pin, name, selfieURL });
 
                         // Stop loading
                         setLoading(false);
@@ -164,4 +164,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default LoadingScreen;
+export default MemoryGameLoading;
