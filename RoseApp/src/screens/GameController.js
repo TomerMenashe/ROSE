@@ -28,19 +28,19 @@ const GameController = () => {
         setCurrentGameIndex(0);
       }
     });
-  }, []);
+  }, [roomRef]);
 
   // Update `playersInGameControl` every time the screen is focused
   useFocusEffect(
-      React.useCallback(() => {
-        const userRef = roomRef.child('playersInGameControl').child(name);
-        userRef.set(true);
+    React.useCallback(() => {
+      const userRef = roomRef.child('playersInGameControl').child(name);
+      userRef.set(true);
 
-        // Clean up when the screen is unfocused
-        return () => {
-          userRef.remove();
-        };
-      }, [name, roomRef])
+      // Clean up when the screen is unfocused
+      return () => {
+        userRef.remove();
+      };
+    }, [name, roomRef])
   );
 
   // Listener for `playersInGameControl` to determine when there are two players
@@ -64,7 +64,7 @@ const GameController = () => {
     return () => {
       playersRef.off('value', onValueChange);
     };
-  }, [currentGameIndex, hasNavigated]);
+  }, [currentGameIndex, hasNavigated, roomRef]);
 
   // Listener for `currentGameIndex` to reset `hasNavigated`
   useEffect(() => {
@@ -81,7 +81,7 @@ const GameController = () => {
     return () => {
       currentGameIndexRef.off('value', onValueChange);
     };
-  }, []);
+  }, [roomRef]);
 
   // Navigate to next game when ready
   useEffect(() => {
@@ -102,11 +102,16 @@ const GameController = () => {
         // Clean `playersInGameControl`
         roomRef.child('playersInGameControl').remove();
       } else {
-        console.error(`[GameController] Unknown game in GAME_FLOW: ${nextGame}`);
-        Alert.alert('Error', `Unknown game: ${nextGame}`);
+        // No more games in `GAME_FLOW`; navigate to `EndVideo`
+        navigateToEndVideo();
+        setHasNavigated(true);
+
+        // Optionally reset `currentGameIndex` or handle game completion
+        roomRef.child('currentGameIndex').remove();
+        roomRef.child('playersInGameControl').remove();
       }
     }
-  }, [isWaiting, hasNavigated, currentGameIndex]);
+  }, [isWaiting, hasNavigated, currentGameIndex, roomRef, navigation]);
 
   const navigateToNextScreen = (nextGame) => {
     switch (nextGame) {
@@ -125,13 +130,14 @@ const GameController = () => {
           params: { pin, name, selfieURL },
         });
         break;
-      case 'EndVideo':
-        navigation.navigate('EndVideo', { pin, name, selfieURL });
-        break;
       default:
         console.error(`[GameController] Unknown game in GAME_FLOW: ${nextGame}`);
         Alert.alert('Error', `Unknown game: ${nextGame}`);
     }
+  };
+
+  const navigateToEndVideo = () => {
+    navigation.navigate('EndVideo', { pin, name, selfieURL });
   };
 
   if (isWaiting) {

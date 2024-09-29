@@ -4,7 +4,6 @@ export const GAME_FLOW = [
     'MemoryGame',
     'LoveQuestion',
     'PhotoEscape',
-    'LoveQuestion',
-    'EndVideo'
+    'LoveQuestion'
     // Add more games as needed
   ];
