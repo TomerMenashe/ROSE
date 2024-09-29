@@ -218,6 +218,40 @@ exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
   return items[Math.floor(Math.random() * items.length)];
 });
 
+exports.getPersonalQuestionFeedback = functions.https.onCall(async (data, _context) => {
+  try {
+    const { question, name1, answer1, name2, answer2 } = data;
+
+    if (!question || !answer1 || !answer2) {
+      throw new functions.https.HttpsError("invalid-argument", "Question, answer1, and answer2 are required.");
+    }
+
+    const prompt = `We play a couples game, and we asked both ${name1} and ${name2} this question: ${question}.
+    ${name1} answer: ${answer1},
+    ${name2} answer: ${answer2},
+    if the answers are similar to each other or logically connected, write back a positive and happy and only a little bit sarcastic response,
+    that confirms that know each other quite well and they should be proud of themselves.
+    if the answers are not similar to each other or not logically connected, write back a response that is a little bit sarcastic,
+    and tell them that they should try to know each other better.
+    `;
+
+    const response = await generateResponse(
+      "gpt-4o",
+      0.7,
+      "text",
+      prompt,
+      null,
+      1000,
+    );
+
+    return { response };
+  } catch (error) {
+    console.error(error);
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});
+  
+
 // eslint-disable-next-line no-unused-vars
 exports.isItemInImage = functions.https.onCall(async (data, _context) => {
   try {
