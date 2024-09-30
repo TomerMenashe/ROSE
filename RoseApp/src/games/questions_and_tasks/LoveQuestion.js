@@ -84,7 +84,11 @@ const LoveQuestion = () => {
         <>
           <Animated.View style={[styles.textContainer, animatedStyle]}>
             <Text style={styles.promptText}>
-              Let's take a small break from games and focus on each other. Try asking each other the next question and give your honest answer to each other.
+              For a moment,
+              let's take little break from the games and turn our attention to our significant other. 
+              Sit back, relax and look into each other's eyes.
+              Open your heart, be honest as much as you can and ask your partner the next question -
+
             </Text>
             <Text style={styles.questionText}>{question}</Text>
           </Animated.View>
