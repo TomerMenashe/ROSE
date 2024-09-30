@@ -1,9 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Dimensions, ActivityIndicator } from 'react-native';
+import {
+    View,
+    Text,
+    StyleSheet,
+    TouchableOpacity,
+    Image,
+    Alert,
+    Dimensions,
+    ActivityIndicator,
+    Pressable
+} from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
-import * as FileSystem from 'expo-file-system'; // Import FileSystem for base64 conversion
+import * as FileSystem from 'expo-file-system';
+import CustomButton from "../../assets/Sounds/CustomButton"; // Import FileSystem for base64 conversion
 
 const { width, height } = Dimensions.get('window');
 
@@ -156,12 +167,12 @@ const SelfieScreen = () => {
                     <Image source={{ uri: photo }} style={styles.capturedPhoto} />
                     {!loading && (
                         <View style={styles.buttonRow}>
-                            <TouchableOpacity style={styles.redButton} onPress={resetSelfie}>
+                            <Pressable style={styles.redButton} onPress={resetSelfie}>
                                 <Text style={styles.buttonText}>Retake</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity style={styles.redButton} onPress={submitSelfie}>
+                            </Pressable>
+                            <CustomButton style={styles.redButton} onPress={submitSelfie}>
                                 <Text style={styles.buttonText}>Submit</Text>
-                            </TouchableOpacity>
+                            </CustomButton>
                         </View>
                     )}
                     {loading && (

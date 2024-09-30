@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Text, ImageBackground, Pressable, Alert, Dimensions } from 'react-native';
+import CustomButton from "../../assets/Sounds/CustomButton";
 
 const { height, width } = Dimensions.get('window');  // Get the screen height and width
 
@@ -47,9 +48,9 @@ const WelcomeScreen = ({ navigation }) => {
 
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <Pressable style={styles.proceedButton} onPress={handleProceed}>
+          <CustomButton style={styles.proceedButton} onPress={handleProceed}>
             <Text style={styles.proceedButtonText}>Continue</Text>
-          </Pressable>
+          </CustomButton>
         </View>
       </ImageBackground>
   );

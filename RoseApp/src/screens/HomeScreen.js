@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Dimensions, Pressable, ImageBackground, ScrollView, SafeAreaView } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import CustomButton from "../../assets/Sounds/CustomButton";
 
 const { width, height } = Dimensions.get('window');
 
@@ -75,20 +76,20 @@ const HomeScreen = ({ navigation, route }) => {
           </View>
 
           {/* Create Game Button */}
-          <Pressable
+          <CustomButton
             style={styles.button}
             onPress={() => navigation.navigate('CreateGame', { name, imageUrl })}
           >
             <Text style={styles.buttonText}>Create Game</Text>
-          </Pressable>
+          </CustomButton>
 
           {/* Join Game Button */}
-          <Pressable
+          <CustomButton
             style={styles.button}
             onPress={() => navigation.navigate('JoinGame', { name, imageUrl })}
           >
             <Text style={styles.buttonText}>Join Game</Text>
-          </Pressable>
+          </CustomButton>
         </ScrollView>
       </ImageBackground>
     </SafeAreaView>

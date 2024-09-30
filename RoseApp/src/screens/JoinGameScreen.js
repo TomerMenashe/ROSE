@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Text, Pressable, ImageBackground, Dimensions, TouchableOpacity } from 'react-native';
 import { firebase } from '../firebase/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import CustomButton from "../../assets/Sounds/CustomButton";
 
 const { height, width } = Dimensions.get('window');
 
@@ -89,9 +90,9 @@ const JoinGameScreen = () => {
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
           {/* Join Game Button */}
-          <Pressable style={styles.button} onPress={handleJoinGame}>
+          <CustomButton style={styles.button} onPress={handleJoinGame}>
             <Text style={styles.buttonText}>Join Game</Text>
-          </Pressable>
+          </CustomButton>
         </View>
       </ImageBackground>
   );

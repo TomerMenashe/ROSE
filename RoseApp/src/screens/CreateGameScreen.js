@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ImageBackground, Dimensions } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
+import CustomButton from "../../assets/Sounds/CustomButton";
 
 const { height, width } = Dimensions.get('window');
 
@@ -57,9 +58,9 @@ const CreateGameScreen = () => {
           <Text style={styles.title}>Create Game</Text>
           <Text style={styles.pinText}>Generated PIN: {pin}</Text>
 
-          <Pressable style={styles.button} onPress={handleCreateGame}>
+          <CustomButton style={styles.button} onPress={handleCreateGame}>
             <Text style={styles.buttonText}>Create Game</Text>
-          </Pressable>
+          </CustomButton>
         </View>
       </ImageBackground>
   );

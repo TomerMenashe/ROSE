@@ -15,6 +15,7 @@ import { Camera, useCameraPermissions, CameraView } from 'expo-camera'; // Corre
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
 import * as FileSystem from 'expo-file-system';
+import CustomButton from "../../../assets/Sounds/CustomButton";
 
 
 const { width, height } = Dimensions.get('window');
@@ -166,9 +167,9 @@ const PhotoEscapeCameraScreen = () => {
                             <TouchableOpacity style={styles.redButton} onPress={resetCapture}>
                                 <Text style={styles.buttonText}>Retake</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={styles.redButton} onPress={submitPhoto}>
+                            <CustomButton style={styles.redButton} onPress={submitPhoto}>
                                 <Text style={styles.buttonText}>Submit</Text>
-                            </TouchableOpacity>
+                            </CustomButton>
                         </View>
                     )}
                     {loading && (

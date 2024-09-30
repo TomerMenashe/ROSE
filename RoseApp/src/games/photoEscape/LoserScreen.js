@@ -4,6 +4,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {fetchItem} from "./PhotoEscapeGeneratingFunctions";
+import CustomButton from "../../../assets/Sounds/CustomButton";
 
 const LoserScreen = () => {
     const navigation = useNavigation();
@@ -28,9 +29,9 @@ const LoserScreen = () => {
                 <ActivityIndicator size="large" color="#FFCC00" />
             )}
 
-            <Pressable style={styles.button} onPress={moveToNextGame}>
+            <CustomButton style={styles.button} onPress={moveToNextGame}>
                 <Text style={styles.buttonText}>Next Game</Text>
-            </Pressable>
+            </CustomButton>
         </View>
     );
 };

@@ -38,7 +38,8 @@
     "react-native-web": "~0.19.10",
     "react-native-zip-archive": "^7.0.1",
     "rn-fetch-blob": "^0.12.0",
-    "roseapp": "file:"
+    "roseapp": "file:",
+    "expo-av": "~14.0.7"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

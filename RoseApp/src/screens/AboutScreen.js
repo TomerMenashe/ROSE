@@ -9,7 +9,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Font from 'expo-font';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RFPercentage } from "react-native-responsive-fontsize"; // For responsive font sizes
+import { RFPercentage } from "react-native-responsive-fontsize";
+import CustomButton from "../../assets/Sounds/CustomButton"; // For responsive font sizes
 
 const { width, height } = Dimensions.get('window');
 
@@ -110,9 +111,9 @@ const AboutScreen = ({ navigation }) => {
           ))}
         </View>
 
-        <Pressable style={styles.button} onPress={handlePress}>
+        <CustomButton style={styles.button} onPress={handlePress}>
           <Text style={styles.buttonText}>Play</Text>
-        </Pressable>
+        </CustomButton>
       </ScrollView>
     </SafeAreaView>
   );
