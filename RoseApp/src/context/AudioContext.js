@@ -1,16 +1,17 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import { Audio } from 'expo-av';
 
 export const AudioContext = createContext();
 
 export const AudioProvider = ({ children }) => {
     const [sound, setSound] = useState(null);
+    const isSoundStoppedRef = useRef(false); // Using useRef instead of useState
 
     // Memoize playBackgroundSound to prevent function recreation on every render
     const playBackgroundSound = useCallback(async () => {
-        if (sound) {
-            console.log('Background sound is already playing.');
-            return; // Prevent multiple instances
+        if (sound || isSoundStoppedRef.current) {
+            console.log('Background sound is already playing or has been stopped.');
+            return; // Prevent multiple instances or restarting after stop
         }
         try {
             console.log('Loading Background Sound');
@@ -34,13 +35,16 @@ export const AudioProvider = ({ children }) => {
         if (sound) {
             try {
                 console.log('Stopping Background Sound');
-                await sound.stopAsync();
+                await sound.pauseAsync(); // Using pauseAsync instead of stopAsync
                 await sound.unloadAsync();
                 setSound(null);
+                isSoundStoppedRef.current = true; // Mark as stopped to prevent future playback
                 console.log('Background Sound Stopped');
             } catch (error) {
                 console.error('Error stopping background sound:', error);
             }
+        } else {
+            console.log('No background sound to stop.');
         }
     }, [sound]);
 

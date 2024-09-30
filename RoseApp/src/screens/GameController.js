@@ -1,10 +1,11 @@
 // GameController.js
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { Alert, ActivityIndicator, View, Text } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { GAME_FLOW } from '../gameFlow';
 import { firebase } from '../firebase/firebase';
+import { AudioContext } from '../context/AudioContext'; // Import AudioContext
 
 const GameController = () => {
   const navigation = useNavigation();
@@ -17,6 +18,10 @@ const GameController = () => {
   const [currentGameIndex, setCurrentGameIndex] = useState(null);
   const [isWaiting, setIsWaiting] = useState(true);
   const [hasNavigated, setHasNavigated] = useState(false);
+
+  const { stopBackgroundSound } = useContext(AudioContext); // Destructure stopBackgroundSound from context
+
+  const hasStoppedSoundRef = useRef(false); // Ref to track if sound has been stopped
 
   // Check if `currentGameIndex` exists; if not, create it and set to 0
   useEffect(() => {
@@ -85,12 +90,15 @@ const GameController = () => {
 
   // Navigate to next game when ready
   useEffect(() => {
-    if (!isWaiting && !hasNavigated && currentGameIndex !== null) {
+    if (!isWaiting && !hasNavigated && currentGameIndex !== null && !hasStoppedSoundRef.current) {
       console.log('[GameController] Ready for navigation.');
 
       const nextGame = GAME_FLOW[currentGameIndex];
 
       if (nextGame) {
+        hasStoppedSoundRef.current = true; // Mark as stopped before calling the function to prevent re-entry
+        stopBackgroundSound(); // Stop background music when game starts
+
         navigateToNextScreen(nextGame);
         setHasNavigated(true);
 
@@ -98,6 +106,7 @@ const GameController = () => {
         roomRef.child('currentGameIndex').transaction((currentValue) => {
           return (currentValue || 0) + 0.5;
         });
+
 
         // Clean `playersInGameControl`
         roomRef.child('playersInGameControl').remove();
@@ -111,7 +120,7 @@ const GameController = () => {
         roomRef.child('playersInGameControl').remove();
       }
     }
-  }, [isWaiting, hasNavigated, currentGameIndex, roomRef, navigation]);
+  }, [isWaiting, hasNavigated, currentGameIndex, roomRef, navigation, stopBackgroundSound]);
 
   const navigateToNextScreen = (nextGame) => {
     switch (nextGame) {
@@ -155,6 +164,7 @@ const GameController = () => {
       </View>
   );
 };
+
 
 const styles = {
   loaderContainer: {
