@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, FadeIn, FadeOut, Layout } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, FadeIn, FadeOut } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
 import * as FileSystem from 'expo-file-system';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const LoveQuestion = () => {
   const [question, setQuestion] = useState('');
@@ -17,7 +17,6 @@ const LoveQuestion = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [areBothReady, setAreBothReady] = useState(false);
-  const [isOtherPlayerReady, setIsOtherPlayerReady] = useState(false);
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -56,6 +55,7 @@ const LoveQuestion = () => {
     fetchQuestion();
     listenForQuestionChanges();
 
+    // Animate the intro text when the component mounts
     fadeValue.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) });
     scaleValue.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) });
 
@@ -64,6 +64,7 @@ const LoveQuestion = () => {
       roomRef.child('currentLoveQuestion').off();
     };
   }, [pin]);
+
 
   useEffect(() => {
     const roomRef = firebase.database().ref(`room/${pin}/readyStatus`);
@@ -75,10 +76,6 @@ const LoveQuestion = () => {
         const readyPlayers = players.filter(player => statuses[player] === true);
         if (readyPlayers.length === 2) {
           setAreBothReady(true);
-        } else if (readyPlayers.length === 1) {
-          if (readyPlayers[0] !== name) {
-            setIsOtherPlayerReady(true);
-          }
         }
       }
     };
@@ -88,7 +85,7 @@ const LoveQuestion = () => {
     return () => {
       roomRef.off('value', handleReadyStatus);
     };
-  }, [pin, name]);
+  }, [pin]);
 
   const handleReady = async () => {
     try {
@@ -110,10 +107,16 @@ const LoveQuestion = () => {
     navigation.navigate('PersonalQuestion', { pin, name, selfieURL });
   };
 
-  // Animated styles for question and proceed button
+  // Animated style for the intro text
+  const promptAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: fadeValue.value,
+    transform: [{ scale: scaleValue.value }],
+  }));
+
+  // Animated style for the question and proceed button
   const questionAnimatedStyle = useAnimatedStyle(() => ({
-    opacity: areBothReady ? withTiming(1, { duration: 1000 }) : withTiming(0, { duration: 500 }),
-    transform: [{ scale: areBothReady ? withTiming(1, { duration: 1000 }) : withTiming(0.8, { duration: 500 }) }],
+    opacity: areBothReady ? withTiming(1, { duration: 1000 }) : 0,
+    transform: [{ scale: areBothReady ? withTiming(1, { duration: 1000 }) : 0.8 }],
   }));
 
   return (
@@ -122,21 +125,24 @@ const LoveQuestion = () => {
         <ActivityIndicator size="large" color="#FF4B4B" />
       ) : (
         <>
-          <Animated.View style={[styles.textContainer, questionAnimatedStyle]}>
+          {/* Intro Text */}
+          <Animated.View style={[styles.textContainer, promptAnimatedStyle]}>
             <Text style={styles.promptText}>
               For a moment,
-              let's take little break from the games and turn our attention to our significant other. 
-              Sit back, relax and look into each other's eyes.
-              Open your heart, be honest as much as you can and ask your partner the next question -
+              let's take a little break from the games and turn our attention to our significant other.{' '}
+              Sit back, relax, and look into each other's eyes.
+              Open your heart, be as honest as you can, and ask your partner the next question -
             </Text>
           </Animated.View>
 
+          {/* Ready Button */}
           {!areBothReady && !isPlayerReady && (
             <TouchableOpacity style={styles.readyButton} onPress={handleReady}>
               <Text style={styles.readyButtonText}>Ready</Text>
             </TouchableOpacity>
           )}
 
+          {/* Waiting Indicator */}
           {isPlayerReady && !areBothReady && (
             <View style={styles.loaderContainer}>
               <ActivityIndicator size="small" color="#FF4B4B" />
@@ -144,12 +150,9 @@ const LoveQuestion = () => {
             </View>
           )}
 
+          {/* Question and Proceed Button */}
           {areBothReady && (
-            <Animated.View
-              entering={FadeIn.duration(500)}
-              exiting={FadeOut.duration(500)}
-              style={styles.questionContainer}
-            >
+            <Animated.View style={[styles.questionContainer, questionAnimatedStyle]}>
               <Text style={styles.questionText}>{question}</Text>
               <TouchableOpacity style={styles.button} onPress={handleProceed}>
                 <Text style={styles.buttonText}>Proceed</Text>
