@@ -3,7 +3,7 @@ const admin = require("firebase-admin");
 const axios = require("axios");
 const {getStorage} = require("firebase-admin/storage");
 const segmindApiKey = functions.config().segmind.api_key;
-const items = ["bra", "headphones", "condom", "thong", "toothbrush", "laptop", "tv remote", "tomato", "toilet brush"];
+const items = ["bra", "headphones", "condom", "thong", "toothbrush", "laptop", "tv remote", "tomato", "toilet brush", "bottle opener", "Boxers underpants", "ice", "glass of water"];
 const crypto = require('crypto');
 const { URL } = require('url');
 const pLimit = require('p-limit');
@@ -130,7 +130,7 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
     if (shuffledFiles.length < 8) {
       throw new Error("Not enough unique target images available.");
     }
-    const selectedImages = shuffledFiles.slice(0, 8);
+    const selectedImages = shuffledFiles.slice(0, 2);
     console.log(`Selected ${selectedImages.length} target images.`);
 
     const limit = pLimit(5); // Limit concurrency to 5
@@ -164,7 +164,7 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
 
         // API calls
         console.log(`Calling MemoryGame API for target image ${file.name}...`);
-        if(alreadyPushedUrlCount >= 16)
+        if(alreadyPushedUrlCount >= 4)
           return;
         const [response1, response2] = await Promise.all([
           axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": segmindApiKey } }),
@@ -207,7 +207,7 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
           const finalURL2 = downloadURL2[0];
 
           // Use push() to add entries
-          if (alreadyPushedUrlCount >= 16)
+          if (alreadyPushedUrlCount >= 4)
             return;
           const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
           await faceSwapRef.set({

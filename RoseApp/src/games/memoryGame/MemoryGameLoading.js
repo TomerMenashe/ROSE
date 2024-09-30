@@ -34,7 +34,7 @@ const MemoryGameLoading = () => {
             const faceSwapsData = snapshot.val();
 
             if (faceSwapsData) {
-                const faceSwapsKeys = Object.keys(faceSwapsData).slice(0, 8); // Get first 8 faceSwaps
+                const faceSwapsKeys = Object.keys(faceSwapsData).slice(0, 2); // Get first 2 faceSwaps
 
                 let cardValues = [];
 
@@ -58,7 +58,7 @@ const MemoryGameLoading = () => {
                 });
 
                 // Check if we have at least six URLs (three pairs)
-                if (cardValues.length >= 16) {
+                if (cardValues.length >= 4) {
                     try {
                         // Shuffle the card values
                         shuffleArray(cardValues);
