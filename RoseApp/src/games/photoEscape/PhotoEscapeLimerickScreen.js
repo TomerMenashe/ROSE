@@ -66,7 +66,7 @@ const PhotoEscapeLimerickScreen = () => {
     // Since data is already fetched, no need to display loading indicator
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Your Limerick</Text>
+            <Text style={styles.title}>Photo Escape</Text>
             <Text style={styles.limerickText}>{limerick}</Text>
             <TouchableOpacity style={styles.button} onPress={handleStart}>
                 <Text style={styles.buttonText}>Start Game</Text>
