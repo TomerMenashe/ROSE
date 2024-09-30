@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -8,7 +8,7 @@ const { width } = Dimensions.get('window');
 const PersonalQuestionFeedback = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { pin, name, selfieURL, question, player1Answer, player2Guess, gptComment } = route.params || {};
+  const { pin, name, selfieURL, question, subjectAnswer, guesserGuess, gptComment } = route.params || {}; // Updated destructuring
 
   const fadeValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
@@ -24,23 +24,27 @@ const PersonalQuestionFeedback = () => {
   }));
 
   const handleReturn = () => {
-    navigation.navigate('GameController', { pin, name, selfieURL });
+    navigation.replace('GameController', { pin, name, selfieURL });
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Animated.View style={[styles.commentContainer, animatedStyle]}>
-        <Text style={styles.commentText}>{gptComment}</Text>
+        <Text style={styles.commentText}>
+          {typeof gptComment === 'string'
+            ? gptComment
+            : JSON.stringify(gptComment) || 'No feedback available.'}
+        </Text>
       </Animated.View>
       
       <View style={styles.answersContainer}>
         <View style={styles.userAnswer}>
           <Text style={styles.userLabel}>Player 1 wrote:</Text>
-          <Text style={styles.answerText}>{player1Answer}</Text>
+          <Text style={styles.answerText}>{subjectAnswer}</Text>
         </View>
         <View style={styles.userAnswer}>
           <Text style={styles.userLabel}>Player 2 guessed:</Text>
-          <Text style={styles.answerText}>{player2Guess}</Text>
+          <Text style={styles.answerText}>{guesserGuess}</Text>
         </View>
       </View>
 

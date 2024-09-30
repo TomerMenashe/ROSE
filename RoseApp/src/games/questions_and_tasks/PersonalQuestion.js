@@ -20,6 +20,7 @@ const PersonalQuestion = () => {
   const [guesserName, setGuesserName] = useState('');
   const [processingResult, setProcessingResult] = useState(false);
   const [partnerSubmitted, setPartnerSubmitted] = useState(false); // New state
+  const [hasSubmitted, setHasSubmitted] = useState(false); // Moved state
 
   const fadeValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
@@ -139,6 +140,7 @@ const PersonalQuestion = () => {
     }
 
     setIsSubmitting(true);
+    setHasSubmitted(true); // Set hasSubmitted to true upon submission
     const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
 
     try {
@@ -151,8 +153,10 @@ const PersonalQuestion = () => {
       console.error('Error submitting answer:', error);
       Alert.alert('Error', 'Failed to submit your answer. Please try again.');
       setIsSubmitting(false);
+      setHasSubmitted(false); // Reset hasSubmitted on error
     }
   };
+
 
   const handleGuesserSubmit = async () => {
     if (guesserGuess.trim() === '') {
@@ -161,6 +165,7 @@ const PersonalQuestion = () => {
     }
 
     setIsSubmitting(true);
+    setHasSubmitted(true); // Set hasSubmitted to true upon submission
     const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
 
     try {
@@ -173,8 +178,10 @@ const PersonalQuestion = () => {
       console.error('Error submitting guess:', error);
       Alert.alert('Error', 'Failed to submit your guess. Please try again.');
       setIsSubmitting(false);
+      setHasSubmitted(false); // Reset hasSubmitted on error
     }
   };
+
 
   useEffect(() => {
     const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
@@ -194,7 +201,7 @@ const PersonalQuestion = () => {
       setPartnerSubmitted(!!partnerSubmitted);
 
       if (data.subjectAnswer && data.guesserGuess && !processingResult) {
-        setProcessingResult(true);
+        setProcessingResult(true); // Move this before the async call
         try {
           // Call backend function to get GPT comment
           const getPersonalQuestionFeedback = firebase.functions().httpsCallable('getPersonalQuestionFeedback');
@@ -207,11 +214,16 @@ const PersonalQuestion = () => {
             question: data.question || question,
           });
 
+          const gptComment = response.data.response; // Ensure correct key
 
-          const gptComment = response.data.comment;
+          // Ensure gptComment is a string
+          const gptCommentString =
+            typeof gptComment === 'string'
+              ? gptComment
+              : JSON.stringify(gptComment);
 
           // Navigate to PersonalQuestionFeedback screen with all necessary data
-          navigation.navigate('PersonalQuestionFeedback', {
+          navigation.replace('PersonalQuestionFeedback', {
             pin,
             name,
             selfieURL,
@@ -220,7 +232,7 @@ const PersonalQuestion = () => {
             subjectAnswer: data.subjectAnswer.answer,
             guesserName: data.guesserGuess.name,
             guesserGuess: data.guesserGuess.guess,
-            gptComment,
+            gptComment: gptCommentString,
           });
 
           roomRef.off('value', onDataChange);
@@ -241,26 +253,6 @@ const PersonalQuestion = () => {
   }, [pin, question, processingResult, name, selfieURL, navigation, role]);
 
   const renderContent = () => {
-    // Check if current user has submitted
-    const [hasSubmitted, setHasSubmitted] = useState(false);
-
-    useEffect(() => {
-      const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
-      const fetchSubmissionStatus = async () => {
-        const dataSnapshot = await roomRef.once('value');
-        const data = dataSnapshot.val();
-
-        if (role === 'Subject' && data.subjectAnswer) {
-          setHasSubmitted(true);
-        } else if (role === 'Guesser' && data.guesserGuess) {
-          setHasSubmitted(true);
-        }
-      };
-
-
-      fetchSubmissionStatus();
-    }, [pin, role]);
-
     if (isLoading) {
       return <ActivityIndicator size="large" color="#FF4B4B" />;
     }
