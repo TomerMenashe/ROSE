@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Alert, ActivityIndicator } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
 import * as FileSystem from 'expo-file-system';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const LoveQuestion = () => {
   const [question, setQuestion] = useState('');
@@ -17,6 +17,10 @@ const LoveQuestion = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [areBothReady, setAreBothReady] = useState(false);
+
+  // Shared values for intro text animation after ready
+  const introFontSize = useSharedValue(width * 0.05);
+  const introColor = useSharedValue(1); // 1 for full red, 0 for pale color
 
   useEffect(() => {
     const fetchQuestion = async () => {
@@ -65,7 +69,6 @@ const LoveQuestion = () => {
     };
   }, [pin]);
 
-
   useEffect(() => {
     const roomRef = firebase.database().ref(`room/${pin}/readyStatus`);
 
@@ -92,6 +95,10 @@ const LoveQuestion = () => {
       const readyRef = firebase.database().ref(`room/${pin}/readyStatus/${name}`);
       await readyRef.set(true);
       setIsPlayerReady(true);
+
+      // Animate intro text to become smaller and more pale
+      introFontSize.value = withTiming(width * 0.04, { duration: 1000, easing: Easing.out(Easing.ease) });
+      introColor.value = withTiming(0.5, { duration: 1000, easing: Easing.out(Easing.ease) }); // Transition to pale color
     } catch (error) {
       console.error('Error setting ready status:', error);
       Alert.alert('Error', 'Failed to set ready status. Please try again.');
@@ -111,6 +118,8 @@ const LoveQuestion = () => {
   const promptAnimatedStyle = useAnimatedStyle(() => ({
     opacity: fadeValue.value,
     transform: [{ scale: scaleValue.value }],
+    fontSize: introFontSize.value,
+    color: `rgba(255, 75, 75, ${introColor.value})`,
   }));
 
   // Animated style for the question and proceed button
@@ -126,14 +135,9 @@ const LoveQuestion = () => {
       ) : (
         <>
           {/* Intro Text */}
-          <Animated.View style={[styles.textContainer, promptAnimatedStyle]}>
-            <Text style={styles.promptText}>
-              For a moment,
-              let's take a little break from the games and turn our attention to our significant other.{' '}
-              Sit back, relax, and look into each other's eyes.
-              Open your heart, be as honest as you can, and ask your partner the next question -
-            </Text>
-          </Animated.View>
+          <Animated.Text style={[styles.promptText, promptAnimatedStyle]}>
+            For a moment, let's take a little break from the games and turn our attention to our significant other. Sit back, relax, and look into each other's eyes. Open your heart, be as honest as you can, and ask your partner the next question -
+          </Animated.Text>
 
           {/* Ready Button */}
           {!areBothReady && !isPlayerReady && (
@@ -150,12 +154,12 @@ const LoveQuestion = () => {
             </View>
           )}
 
-          {/* Question and Proceed Button */}
+          {/* Question and Done Button */}
           {areBothReady && (
             <Animated.View style={[styles.questionContainer, questionAnimatedStyle]}>
               <Text style={styles.questionText}>{question}</Text>
-              <TouchableOpacity style={styles.button} onPress={handleProceed}>
-                <Text style={styles.buttonText}>Proceed</Text>
+              <TouchableOpacity style={styles.doneButton} onPress={handleProceed}>
+                <Text style={styles.doneButtonText}>Done</Text>
               </TouchableOpacity>
             </Animated.View>
           )}
@@ -165,6 +169,7 @@ const LoveQuestion = () => {
   );
 };
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -173,30 +178,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  textContainer: {
-    marginBottom: 40,
-    paddingHorizontal: 20,
-  },
   promptText: {
-    fontSize: width * 0.05,
-    color: '#FF4B4B',
     textAlign: 'center',
     marginBottom: 20,
     textShadowColor: '#FF4B4B',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
+    paddingHorizontal: 20,
   },
   readyButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#FF4B4B',
     paddingVertical: 15,
-    paddingHorizontal: 40,
+    paddingHorizontal: 30,
     borderRadius: 10,
-    shadowColor: '#4CAF50',
+    shadowColor: '#FF4B4B',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
     shadowRadius: 10,
     elevation: 5,
     marginTop: 20,
+    position: 'absolute',
+    bottom: 100,
   },
   readyButtonText: {
     color: '#FFFFFF',
@@ -216,9 +218,10 @@ const styles = StyleSheet.create({
   questionContainer: {
     alignItems: 'center',
     paddingHorizontal: 20,
+    marginTop: 20,
   },
   questionText: {
-    fontSize: width * 0.06,
+    fontSize: width * 0.065, // Increased font size
     color: '#FF4B4B',
     textAlign: 'center',
     textShadowColor: '#FF4B4B',
@@ -226,20 +229,22 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
     marginBottom: 20,
   },
-  button: {
-    backgroundColor: '#FF4B4B',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 10,
-    shadowColor: '#FF4B4B',
+  doneButton: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 20,
+    shadowColor: '#FFFFFF',
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.7,
-    shadowRadius: 10,
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
     elevation: 5,
+    position: 'absolute',
+    bottom: -140,
   },
-  buttonText: {
-    color: '#FFFFFF',
-    fontSize: width * 0.05,
+  doneButtonText: {
+    color: '#FF4B4B',
+    fontSize: width * 0.045,
     fontWeight: 'bold',
   },
 });
