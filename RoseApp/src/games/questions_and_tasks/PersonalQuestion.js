@@ -19,6 +19,7 @@ const PersonalQuestion = () => {
   const [subjectName, setSubjectName] = useState('');
   const [guesserName, setGuesserName] = useState('');
   const [processingResult, setProcessingResult] = useState(false);
+  const [partnerSubmitted, setPartnerSubmitted] = useState(false); // New state
 
   const fadeValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
@@ -40,6 +41,7 @@ const PersonalQuestion = () => {
       try {
         // Check if roles are already set
         const rolesSnapshot = await roomRef.child('roles').once('value');
+        let currentRole = role;
         if (!rolesSnapshot.exists()) {
           // Roles not set, set them now
           const participantsSnapshot = await firebase.database().ref(`room/${pin}/participants`).once('value');
@@ -54,24 +56,27 @@ const PersonalQuestion = () => {
 
           // Randomly assign subject and guesser
           const shuffledNames = participantNames.sort(() => 0.5 - Math.random());
-          const [subject, guesser] = shuffledNames;
+          const [assignedSubjectName, assignedGuesserName] = shuffledNames;
 
           // Store in database
-          await roomRef.child('roles').set({ subjectName: subject, guesserName: guesser });
+          await roomRef.child('roles').set({ subjectName: assignedSubjectName, guesserName: assignedGuesserName });
 
           // Set local state
-          setSubjectName(subject);
-          setGuesserName(guesser);
+          setSubjectName(assignedSubjectName);
+          setGuesserName(assignedGuesserName);
 
-          setRole(name === subject ? 'Subject' : 'Guesser');
+          currentRole = name === assignedSubjectName ? 'Subject' : 'Guesser';
+          setRole(currentRole);
         } else {
           // Roles already set, get them
           const rolesData = rolesSnapshot.val();
           setSubjectName(rolesData.subjectName);
           setGuesserName(rolesData.guesserName);
 
-          setRole(name === rolesData.subjectName ? 'Subject' : 'Guesser');
+          currentRole = name === rolesData.subjectName ? 'Subject' : 'Guesser';
+          setRole(currentRole);
         }
+
 
         // Fetch or generate question
         const questionSnapshot = await roomRef.child('question').once('value');
@@ -85,14 +90,22 @@ const PersonalQuestion = () => {
           const questions = content.split('\n').filter(q => q.trim() !== '');
           const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
 
+          // Replace {name} with subjectName
+          const filledQuestion = randomQuestion.replace(/{name}/g, subjectName);
+
           // Store question in database
-          await roomRef.child('question').set(randomQuestion);
+          await roomRef.child('question').set(filledQuestion);
 
           // Set local state
-          setQuestion(randomQuestion);
+          setQuestion(filledQuestion);
         } else {
           // Question already exists
-          setQuestion(questionSnapshot.val());
+          const existingQuestion = questionSnapshot.val();
+
+          // Replace {name} with subjectName in case it's not yet replaced
+          const filledQuestion = existingQuestion.replace(/{name}/g, subjectName);
+
+          setQuestion(filledQuestion);
         }
 
         setIsLoading(false);
@@ -103,6 +116,7 @@ const PersonalQuestion = () => {
       }
     };
 
+
     setupGame();
 
     // Animation setup
@@ -110,7 +124,7 @@ const PersonalQuestion = () => {
     scaleValue.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) });
 
     return () => {};
-  }, [pin, name, navigation, fadeValue, scaleValue]);
+  }, [pin, name, navigation, fadeValue, scaleValue, subjectName, role]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: fadeValue.value,
@@ -132,7 +146,6 @@ const PersonalQuestion = () => {
         name: name,
         answer: subjectAnswer.trim(),
       });
-      Alert.alert('Success', 'Your answer has been submitted.');
       setIsSubmitting(false);
     } catch (error) {
       console.error('Error submitting answer:', error);
@@ -168,6 +181,18 @@ const PersonalQuestion = () => {
 
     const onDataChange = async (snapshot) => {
       const data = snapshot.val();
+      if (!data) return;
+
+      const currentUserSubmitted =
+        (role === 'Subject' && data.subjectAnswer) ||
+        (role === 'Guesser' && data.guesserGuess);
+
+      const partnerSubmitted =
+        (role === 'Subject' && data.guesserGuess) ||
+        (role === 'Guesser' && data.subjectAnswer);
+
+      setPartnerSubmitted(!!partnerSubmitted);
+
       if (data.subjectAnswer && data.guesserGuess && !processingResult) {
         setProcessingResult(true);
         try {
@@ -181,6 +206,7 @@ const PersonalQuestion = () => {
             guesserGuess: data.guesserGuess.guess,
             question: data.question || question,
           });
+
 
           const gptComment = response.data.comment;
 
@@ -206,68 +232,111 @@ const PersonalQuestion = () => {
       }
     };
 
+
     roomRef.on('value', onDataChange);
 
     return () => {
       roomRef.off('value', onDataChange);
     };
-  }, [pin, question, processingResult, name, selfieURL, navigation]);
+  }, [pin, question, processingResult, name, selfieURL, navigation, role]);
+
+  const renderContent = () => {
+    // Check if current user has submitted
+    const [hasSubmitted, setHasSubmitted] = useState(false);
+
+    useEffect(() => {
+      const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
+      const fetchSubmissionStatus = async () => {
+        const dataSnapshot = await roomRef.once('value');
+        const data = dataSnapshot.val();
+
+        if (role === 'Subject' && data.subjectAnswer) {
+          setHasSubmitted(true);
+        } else if (role === 'Guesser' && data.guesserGuess) {
+          setHasSubmitted(true);
+        }
+      };
+
+
+      fetchSubmissionStatus();
+    }, [pin, role]);
+
+    if (isLoading) {
+      return <ActivityIndicator size="large" color="#FF4B4B" />;
+    }
+
+    if (hasSubmitted && !partnerSubmitted) {
+      return (
+        <View style={styles.waitingContainer}>
+          <ActivityIndicator size="small" color="#FF4B4B" />
+          <Text style={styles.waitingText}>Waiting for your partner...</Text>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        <Animated.View style={[styles.textContainer, animatedStyle]}>
+          {/* Removed the headline "Question for {subjectName}:" */}
+          <Text style={styles.questionText}>{question}</Text>
+        </Animated.View>
+
+        {role === 'Subject' ? (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your answer..."
+              placeholderTextColor="#CCCCCC"
+              value={subjectAnswer}
+              onChangeText={setSubjectAnswer}
+              multiline
+            />
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleSubjectSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Submit Answer</Text>
+              )}
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder={`Guess ${subjectName}'s answer...`}
+              placeholderTextColor="#CCCCCC"
+              value={guesserGuess}
+              onChangeText={setGuesserGuess}
+              multiline
+            />
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleGuesserSubmit}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.buttonText}>Submit Guess</Text>
+              )}
+            </TouchableOpacity>
+          </>
+        )}
+      </>
+    );
+  };
+
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {isLoading ? (
-        <ActivityIndicator size="large" color="#FF4B4B" />
-      ) : (
-        <>
-          <Animated.View style={[styles.textContainer, animatedStyle]}>
-            <Text style={styles.questionText}>
-              {`Question for ${subjectName}:`}
-            </Text>
-            <Text style={styles.questionText}>{question}</Text>
-          </Animated.View>
-
-          {role === 'Subject' ? (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your answer..."
-                placeholderTextColor="#CCCCCC"
-                value={subjectAnswer}
-                onChangeText={setSubjectAnswer}
-                multiline
-              />
-              <TouchableOpacity style={styles.button} onPress={handleSubjectSubmit} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.buttonText}>Submit Answer</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder={`Guess ${subjectName}'s answer...`}
-                placeholderTextColor="#CCCCCC"
-                value={guesserGuess}
-                onChangeText={setGuesserGuess}
-                multiline
-              />
-              <TouchableOpacity style={styles.button} onPress={handleGuesserSubmit} disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.buttonText}>Submit Guess</Text>
-                )}
-              </TouchableOpacity>
-            </>
-          )}
-        </>
-      )}
+      {renderContent()}
     </KeyboardAvoidingView>
   );
 };
@@ -280,6 +349,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  waitingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  waitingText: {
+    marginTop: 10,
+    color: '#FF4B4B',
+    fontSize: width * 0.045,
+    textAlign: 'center',
   },
   textContainer: {
     marginBottom: 40,
