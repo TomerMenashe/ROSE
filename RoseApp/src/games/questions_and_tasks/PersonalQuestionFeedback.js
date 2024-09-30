@@ -8,14 +8,30 @@ const { width } = Dimensions.get('window');
 const PersonalQuestionFeedback = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { pin, name, selfieURL, question, subjectAnswer, guesserGuess, gptComment } = route.params || {}; // Updated destructuring
+  const {
+    pin,
+    name,
+    selfieURL,
+    question,
+    subjectName,
+    subjectAnswer,
+    guesserName,
+    guesserGuess,
+    gptComment,
+  } = route.params || {}; // Updated destructuring
 
   const fadeValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
 
   React.useEffect(() => {
-    fadeValue.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) });
-    scaleValue.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) });
+    fadeValue.value = withTiming(1, {
+      duration: 2000,
+      easing: Easing.out(Easing.ease),
+    });
+    scaleValue.value = withTiming(1, {
+      duration: 2000,
+      easing: Easing.out(Easing.ease),
+    });
   }, [fadeValue, scaleValue]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -39,17 +55,17 @@ const PersonalQuestionFeedback = () => {
       
       <View style={styles.answersContainer}>
         <View style={styles.userAnswer}>
-          <Text style={styles.userLabel}>Player 1 wrote:</Text>
+          <Text style={styles.userLabel}>{subjectName} wrote:</Text>
           <Text style={styles.answerText}>{subjectAnswer}</Text>
         </View>
         <View style={styles.userAnswer}>
-          <Text style={styles.userLabel}>Player 2 guessed:</Text>
+          <Text style={styles.userLabel}>{guesserName} guessed:</Text>
           <Text style={styles.answerText}>{guesserGuess}</Text>
         </View>
       </View>
 
       <TouchableOpacity style={styles.button} onPress={handleReturn}>
-        <Text style={styles.buttonText}>Return to Game</Text>
+        <Text style={styles.buttonText}>Next adventure</Text>
       </TouchableOpacity>
     </ScrollView>
   );
