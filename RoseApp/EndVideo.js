@@ -28,6 +28,7 @@ const EndVideo = () => {
     const [isPlaying, setIsPlaying] = useState(true);
     const [downloadAllPressed, setDownloadAllPressed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const gameRef = firebase.database().ref(`room`);
 
     useEffect(() => {
         if (!pin) {
@@ -238,6 +239,24 @@ const EndVideo = () => {
         }
     };
 
+    const endGame = async () => {
+        try {
+            // Remove any active listeners to prevent `currentGameIndex` from being recreated
+            gameRef.child(`${pin}/currentGameIndex`).off();
+            gameRef.child(`${pin}/playersInGameControl`).off();
+
+            // Remove `currentGameIndex` first
+            await gameRef.child(`${pin}/currentGameIndex`).remove();
+
+            // Then remove the entire room
+            await gameRef.child(`${pin}`).remove();
+
+            // Navigate back to the Welcome screen
+            navigation.replace('Welcome');
+        } catch (error) {
+        }
+    };
+
     const watchVideoAgain = () => {
         setCurrentImageIndex(0);
         setIsPlaying(true);
@@ -284,6 +303,16 @@ const EndVideo = () => {
                             {isLoading ? 'Downloading...' : 'Download All Images'}
                         </Text>
                     </TouchableOpacity>
+
+
+                    <TouchableOpacity
+                        style={[styles.downloadAllButton, styles.enhancedButton]}
+                        onPress={endGame}
+                    >
+                        <Text style={styles.buttonText}>
+                            {'End Game'}
+                        </Text>
+                    </TouchableOpacity>
                 </View>
             )}
 
@@ -292,6 +321,14 @@ const EndVideo = () => {
                 <View style={styles.buttonContainer}>
                     <TouchableOpacity style={[styles.mainButton, styles.enhancedButton]} onPress={watchVideoAgain}>
                         <Text style={styles.buttonText}>Watch Video Again</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.downloadAllButton, styles.enhancedButton]}
+                        onPress={endGame}
+                    >
+                        <Text style={styles.buttonText}>
+                            {'End Game'}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             )}
