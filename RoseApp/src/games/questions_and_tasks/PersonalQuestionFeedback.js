@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { firebase } from '../../firebase/firebase'; // **Added Import**
 
 const { width } = Dimensions.get('window');
 
@@ -23,6 +24,8 @@ const PersonalQuestionFeedback = () => {
   const fadeValue = useSharedValue(0);
   const scaleValue = useSharedValue(0.8);
 
+  const [isClearing, setIsClearing] = React.useState(false); // **New State for Loader**
+
   React.useEffect(() => {
     fadeValue.value = withTiming(1, {
       duration: 2000,
@@ -39,8 +42,27 @@ const PersonalQuestionFeedback = () => {
     transform: [{ scale: scaleValue.value }],
   }));
 
-  const handleReturn = () => {
-    navigation.replace('GameController', { pin, name, selfieURL });
+  const handleReturn = async () => { // **Updated Function**
+    setIsClearing(true); // **Show Loader**
+
+    try {
+      const roomRef = firebase.database().ref(`room/${pin}/personalQuestion`);
+
+      // Remove generated fields
+      await Promise.all([
+        roomRef.child('question').remove(),
+        roomRef.child('subjectAnswer').remove(),
+        roomRef.child('guesserGuess').remove(),
+        roomRef.child('feedback').remove(),
+      ]);
+
+      // Navigate to the next screen after clearing
+      navigation.replace('GameController', { pin, name, selfieURL });
+    } catch (error) {
+      console.error('Error clearing game data:', error);
+      Alert.alert('Error', 'Failed to prepare for the next adventure. Please try again.');
+      setIsClearing(false); // **Hide Loader on Error**
+    }
   };
 
   return (
@@ -64,9 +86,17 @@ const PersonalQuestionFeedback = () => {
         </View>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleReturn}>
-        <Text style={styles.buttonText}>Next adventure</Text>
-      </TouchableOpacity>
+      {/* **Loader Display While Clearing Data** */}
+      {isClearing ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color="#FF4B4B" />
+          <Text style={styles.loadingText}>Preparing next adventure...</Text>
+        </View>
+      ) : (
+        <TouchableOpacity style={styles.button} onPress={handleReturn}>
+          <Text style={styles.buttonText}>Next adventure</Text>
+        </TouchableOpacity>
+      )}
     </ScrollView>
   );
 };
@@ -129,6 +159,17 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: width * 0.05,
     fontWeight: 'bold',
+  },
+  loaderContainer: { // **New Styles for Loader**
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    color: '#FF4B4B',
+    fontSize: width * 0.045,
+    textAlign: 'center',
   },
 });
 
