@@ -26,9 +26,12 @@ const LoveQuestion = () => {
         const questions = content.split('\n').filter(q => q.trim() !== '');
         const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
         
-        // Store the question in Firebase Realtime Database using 'pin'
-        const roomRef = firebase.database().ref(`rooms/${pin}`);
-        await roomRef.child('currentQuestion').set(randomQuestion);
+        // Remove the number from the beginning of the question
+        const cleanedQuestion = randomQuestion.replace(/^\d+\.\s*/, '');
+        
+        // Store the cleaned question in Firebase Realtime Database using 'pin'
+        const roomRef = firebase.database().ref(`room/${pin}`);
+        await roomRef.child('currentLoveQuestion').set(cleanedQuestion);
         
         setIsLoading(false); // Stop loading after fetching
       } catch (error) {
@@ -39,8 +42,8 @@ const LoveQuestion = () => {
     };
 
     const listenForQuestionChanges = () => {
-      const roomRef = firebase.database().ref(`rooms/${pin}`);
-      roomRef.child('currentQuestion').on('value', (snapshot) => {
+      const roomRef = firebase.database().ref(`room/${pin}`);
+      roomRef.child('currentLoveQuestion').on('value', (snapshot) => {
         if (snapshot.exists()) {
           setQuestion(snapshot.val());
         }
@@ -54,8 +57,8 @@ const LoveQuestion = () => {
     scaleValue.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) });
 
     return () => {
-      const roomRef = firebase.database().ref(`rooms/${pin}`);
-      roomRef.child('currentQuestion').off();
+      const roomRef = firebase.database().ref(`room/${pin}`);
+      roomRef.child('currentLoveQuestion').off();
     };
   }, [pin]);
 
