@@ -16,6 +16,7 @@ const PersonalQuestion = () => {
   const [role, setRole] = useState(null); // 'Subject' or 'Guesser'
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFeedbackReady, setIsFeedbackReady] = useState(false); // New state for feedback readiness
   const [subjectName, setSubjectName] = useState('');
   const [guesserName, setGuesserName] = useState('');
   const [processingResult, setProcessingResult] = useState(false);
@@ -202,48 +203,69 @@ const PersonalQuestion = () => {
 
       if (data.subjectAnswer && data.guesserGuess && !processingResult) {
         setProcessingResult(true); // Move this before the async call
+
+        // Show loader when both have submitted
+        setIsFeedbackReady(false);
+
         try {
-          // Call backend function to get GPT comment
-          const getPersonalQuestionFeedback = firebase.functions().httpsCallable('getPersonalQuestionFeedback');
+          const feedbackSnapshot = await roomRef.child('feedback').once('value');
 
-          const response = await getPersonalQuestionFeedback({
-            subjectName: data.subjectAnswer.name,
-            subjectAnswer: data.subjectAnswer.answer,
-            guesserName: data.guesserGuess.name,
-            guesserGuess: data.guesserGuess.guess,
-            question: data.question || question,
-          });
+          if (feedbackSnapshot.exists()) {
+            // Feedback already exists, retrieve it
+            const existingFeedback = feedbackSnapshot.val();
+            navigateToFeedback(existingFeedback, data);
+          } else {
+            // Feedback doesn't exist, call backend to generate it
+            const getPersonalQuestionFeedback = firebase.functions().httpsCallable('getPersonalQuestionFeedback');
 
-          const gptComment = response.data.response; // Ensure correct key
+            const response = await getPersonalQuestionFeedback({
+              pin, // Include pin
+              subjectName: data.subjectAnswer.name,
+              subjectAnswer: data.subjectAnswer.answer,
+              guesserName: data.guesserGuess.name,
+              guesserGuess: data.guesserGuess.guess,
+              question: data.question || question,
+            });
 
-          // Ensure gptComment is a string
-          const gptCommentString =
-            typeof gptComment === 'string'
-              ? gptComment
-              : JSON.stringify(gptComment);
+            const gptComment = response.data.response; // Ensure correct key
 
-          // Navigate to PersonalQuestionFeedback screen with all necessary data
-          navigation.replace('PersonalQuestionFeedback', {
-            pin,
-            name,
-            selfieURL,
-            question: data.question || question,
-            subjectName: data.subjectAnswer.name,
-            subjectAnswer: data.subjectAnswer.answer,
-            guesserName: data.guesserGuess.name,
-            guesserGuess: data.guesserGuess.guess,
-            gptComment: gptCommentString,
-          });
+            // Ensure gptComment is a string
+            const gptCommentString =
+              typeof gptComment === 'string'
+                ? gptComment
+                : JSON.stringify(gptComment);
 
-          roomRef.off('value', onDataChange);
+            // Navigate to PersonalQuestionFeedback screen with all necessary data
+            navigateToFeedback(gptCommentString, data);
+          }
         } catch (error) {
           console.error('Error fetching GPT comment:', error);
           Alert.alert('Error', 'Failed to fetch feedback. Please try again.');
           setProcessingResult(false);
+          setIsFeedbackReady(false);
         }
       }
     };
 
+    const navigateToFeedback = (gptComment, data) => {
+      // Ensure gptComment is available before navigating
+      if (gptComment) {
+        setIsFeedbackReady(true); // Hide loader
+        navigation.replace('PersonalQuestionFeedback', {
+          pin,
+          name,
+          selfieURL,
+          question: data.question || question,
+          subjectName: data.subjectAnswer.name,
+          subjectAnswer: data.subjectAnswer.answer,
+          guesserName: data.guesserGuess.name,
+          guesserGuess: data.guesserGuess.guess,
+          gptComment: gptComment,
+        });
+
+        roomRef.off('value', onDataChange);
+      }
+    };
 
     roomRef.on('value', onDataChange);
 
@@ -262,6 +284,16 @@ const PersonalQuestion = () => {
         <View style={styles.waitingContainer}>
           <ActivityIndicator size="small" color="#FF4B4B" />
           <Text style={styles.waitingText}>Waiting for your partner...</Text>
+        </View>
+      );
+    }
+
+    if (hasSubmitted && !isFeedbackReady) {
+      // Show loader while waiting for feedback
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#FF4B4B" />
+          <Text style={styles.loadingText}>Generating feedback...</Text>
         </View>
       );
     }
@@ -347,6 +379,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   waitingText: {
+    marginTop: 10,
+    color: '#FF4B4B',
+    fontSize: width * 0.045,
+    textAlign: 'center',
+  },
+  loadingContainer: { // New style for the loader
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: { // New style for loader text
     marginTop: 10,
     color: '#FF4B4B',
     fontSize: width * 0.045,
