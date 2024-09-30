@@ -251,33 +251,52 @@ exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
 
 exports.getPersonalQuestionFeedback = functions.https.onCall(async (data, _context) => {
   try {
-    const { subjectName, subjectAnswer, guesserName, guesserGuess, question } = data;
+    const { pin, subjectName, subjectAnswer, guesserName, guesserGuess, question } = data;
 
-    if (!question || !subjectAnswer || !guesserGuess) {
-      throw new functions.https.HttpsError("invalid-argument", "Question, answer1, and answer2 are required.");
+    if (!pin || !question || !subjectAnswer || !guesserGuess) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Pin, question, and both answers are required."
+      );
     }
 
-    const prompt = `We play a couples game, and we asked both ${subjectName} and ${guesserName} this question: ${question}.
-    ${subjectName} answer: ${subjectAnswer},
-    ${guesserName} answer: ${guesserGuess},
-    if the answers are similar to each other or logically connected, write back a positive and happy and only a little bit sarcastic response,
-    that confirms that know each other quite well and they should be proud of themselves.
-    if the answers are not similar to each other or not logically connected, write back a response that is a little bit sarcastic,
-    and tell them that they should try to know each other better.
-    `;
+    const feedbackRef = admin.database().ref(`room/${pin}/personalQuestion/feedback`);
 
-    const response = await generateResponse(
-      "gpt-4o",
-      0.7,
-      "text",
-      prompt,
-      null,
-      1000,
-    );
+    // Use a transaction to ensure only one generation occurs
+    const feedbackSnapshot = await feedbackRef.once('value');
 
-    return { response };
+    if (feedbackSnapshot.exists()) {
+      // Feedback already exists, return it
+      const existingFeedback = feedbackSnapshot.val();
+      return { response: existingFeedback };
+    } else {
+      // Feedback doesn't exist, generate it
+      const prompt = `We play a couples game, and we asked both ${subjectName} and ${guesserName} this question: ${question}.
+        ${subjectName} answered: ${subjectAnswer},
+        ${guesserName} guessed: ${guesserGuess},
+        if the answers are similar to each other or logically connected, write back a positive and happy and only a little bit sarcastic response,
+        that confirms that they know each other quite well and they should be proud of themselves.
+        if the answers are not similar to each other or not logically connected, write back a response that is a little bit sarcastic,
+        and tell them that they should try to know each other better.
+        `;
+
+      // Generate response using GPT
+      const gptResponse = await generateResponse(
+        "gpt-4o",
+        0.7,
+        "text",
+        prompt,
+        null,
+        1000
+      );
+
+      // Store the generated feedback in the database
+      await feedbackRef.set(gptResponse);
+
+      return { response: gptResponse };
+    }
   } catch (error) {
-    console.error(error);
+    console.error("getPersonalQuestionFeedback Error:", error);
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
@@ -409,3 +428,4 @@ exports.getHamshir = functions.https.onCall(async (data, _context) => {
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
+
