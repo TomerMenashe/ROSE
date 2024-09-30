@@ -1,12 +1,13 @@
 // RoomScreen.js
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react'; // Added useContext
 import { View, Text, StyleSheet, ImageBackground, Dimensions, ActivityIndicator, Alert, Image } from 'react-native';
 import { firebase } from '../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { generatePhotoEscapeData } from '../games/photoEscape/PhotoEscapeGeneratingFunctions';
 import { generateFaceSwaps } from '../games/memoryGame/MemoryGameFaceSwapFunctions';
+import { AudioContext } from '../context/AudioContext'; // Import AudioContext
 
 const { height, width } = Dimensions.get('window');
 
@@ -26,6 +27,8 @@ const RoomScreen = () => {
   const alreadyGeneratedItemRef = useRef(false);
   const faceSwapCallRef = useRef(false);
   const roomCreator = useRef(false);
+
+  const { stopBackgroundSound } = useContext(AudioContext); // Destructure stopBackgroundSound from context
 
   useEffect(() => {
     if (!pin) {
@@ -76,6 +79,9 @@ const RoomScreen = () => {
                 Alert.alert('Error', 'Failed to start the game.');
               });
 
+          // Stop the background music
+          stopBackgroundSound(); // Added: Stop background music when 2 players are present
+
           // Start the 5-second countdown only once
           if (countdown === null) {
             setCountdown(5);
@@ -89,7 +95,7 @@ const RoomScreen = () => {
     return () => {
       roomRef.child('participants').off('value', participantListener);
     };
-  }, [pin, navigation, functions, name, selfieURL, countdown]);
+  }, [pin, navigation, functions, name, selfieURL, countdown, stopBackgroundSound]); // Added stopBackgroundSound to dependencies
 
   // Countdown effect
   useEffect(() => {

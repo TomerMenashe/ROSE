@@ -3,6 +3,7 @@ import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { AudioProvider } from './src/context/AudioContext';
 
 // Import screens
 import SplashScreenComponent from './src/screens/SplashScreen';
@@ -54,6 +55,7 @@ export default function App() {
   }
 
   return (
+  <AudioProvider>
     <NavigationContainer onReady={onLayoutRootView}>
       <MainStack.Navigator initialRouteName="Splash">
         <MainStack.Screen
@@ -132,5 +134,6 @@ export default function App() {
         />
       </MainStack.Navigator>
     </NavigationContainer>
+  </AudioProvider>
   );
 }

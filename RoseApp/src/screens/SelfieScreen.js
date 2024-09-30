@@ -14,7 +14,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
 import * as FileSystem from 'expo-file-system';
-import CustomButton from "../../assets/Sounds/CustomButton"; // Import FileSystem for base64 conversion
+import CustomButton from "../../assets/sounds/CustomButton"; // Import FileSystem for base64 conversion
 
 const { width, height } = Dimensions.get('window');
 

@@ -4,7 +4,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {fetchItem} from "./PhotoEscapeGeneratingFunctions";
-import CustomButton from "../../../assets/Sounds/CustomButton";
+import CustomButton from "../../../assets/sounds/CustomButton";
 
 const LoserScreen = () => {
     const navigation = useNavigation();
