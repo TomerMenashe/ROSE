@@ -105,13 +105,21 @@ const LoveQuestion = () => {
     }
   };
 
-  const handleProceed = () => {
-    if (!pin || !name || !selfieURL) {
-      Alert.alert('Error', 'Missing game information. Please try again.');
-      return;
-    }
+  const handleDone = async () => {
+    try {
+      // Delete 'currentLoveQuestion' from Firebase
+      const roomRef = firebase.database().ref(`room/${pin}`);
+      await roomRef.child('currentLoveQuestion').remove();
 
-    navigation.navigate('PersonalQuestion', { pin, name, selfieURL });
+      // Optionally, reset readiness statuses for a new round
+      await roomRef.child('readyStatus').remove();
+
+      // Navigate back or to another screen as needed
+      navigation.navigate('PersonalQuestion', { pin, name, selfieURL });
+    } catch (error) {
+      console.error('Error completing the round:', error);
+      Alert.alert('Error', 'Failed to complete the round. Please try again.');
+    }
   };
 
   // Animated style for the intro text
@@ -122,7 +130,7 @@ const LoveQuestion = () => {
     color: `rgba(255, 75, 75, ${introColor.value})`,
   }));
 
-  // Animated style for the question and proceed button
+  // Animated style for the question and done button
   const questionAnimatedStyle = useAnimatedStyle(() => ({
     opacity: areBothReady ? withTiming(1, { duration: 1000 }) : 0,
     transform: [{ scale: areBothReady ? withTiming(1, { duration: 1000 }) : 0.8 }],
@@ -158,7 +166,7 @@ const LoveQuestion = () => {
           {areBothReady && (
             <Animated.View style={[styles.questionContainer, questionAnimatedStyle]}>
               <Text style={styles.questionText}>{question}</Text>
-              <TouchableOpacity style={styles.doneButton} onPress={handleProceed}>
+              <TouchableOpacity style={styles.doneButton} onPress={handleDone}>
                 <Text style={styles.doneButtonText}>Done</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -189,7 +197,7 @@ const styles = StyleSheet.create({
   readyButton: {
     backgroundColor: '#FF4B4B',
     paddingVertical: 15,
-    paddingHorizontal: 30,
+    paddingHorizontal: 40,
     borderRadius: 10,
     shadowColor: '#FF4B4B',
     shadowOffset: { width: 0, height: 0 },
@@ -197,13 +205,19 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
     marginTop: 20,
-    position: 'absolute',
-    bottom: 100,
+    // Glowing effect
+    shadowColor: '#FF4B4B',
+    shadowOpacity: 1,
+    shadowRadius: 20,
   },
   readyButtonText: {
     color: '#FFFFFF',
     fontSize: width * 0.05,
     fontWeight: 'bold',
+      // Add some text shadow for better visibility
+    textShadowColor: '#FF4B4B',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 5,
   },
   loaderContainer: {
     flexDirection: 'row',
@@ -221,7 +235,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   questionText: {
-    fontSize: width * 0.065, // Increased font size
+    fontSize: width * 0.07, // Increased font size
     color: '#FF4B4B',
     textAlign: 'center',
     textShadowColor: '#FF4B4B',
@@ -246,6 +260,10 @@ const styles = StyleSheet.create({
     color: '#FF4B4B',
     fontSize: width * 0.045,
     fontWeight: 'bold',
+    // Add some text shadow for better visibility
+    textShadowColor: '#FF4B4B',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
   },
 });
 
