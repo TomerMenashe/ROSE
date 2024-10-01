@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ImageBackground, Dimensions } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
-import CustomButton from "../../assets/sounds/CustomButton";
+import CustomButton from "../../assets/Sounds/CustomButton";
 
 const { height, width } = Dimensions.get('window');
 

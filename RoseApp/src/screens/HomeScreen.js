@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Dimensions, Pressable, ImageBackground, ScrollView, SafeAreaView } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import CustomButton from "../../assets/sounds/CustomButton";
+import CustomButton from "../../assets/Sounds/CustomButton";
 
 const { width, height } = Dimensions.get('window');
 

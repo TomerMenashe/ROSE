@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useContext } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, StyleSheet, Pressable, Text, Dimensions, Platform, ScrollView } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -10,8 +10,7 @@ import Animated, {
 import * as Font from 'expo-font';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFPercentage } from "react-native-responsive-fontsize";
-import CustomButton from "../../assets/sounds/CustomButton"; // For responsive font sizes
-import { AudioContext } from '../context/AudioContext'; // Import AudioContext
+import CustomButton from "../../assets/Sounds/CustomButton"; // For responsive font sizes
 
 const { width, height } = Dimensions.get('window');
 
@@ -26,7 +25,6 @@ const AboutScreen = ({ navigation }) => {
     'We use technology to bring back human connection.',
     'Will you dare to play?',
   ];
-
 
   const animationDuration = 3000;
   const phraseTimings = phrases.map((_, i) => i * 4000);
@@ -80,16 +78,9 @@ const AboutScreen = ({ navigation }) => {
     });
   }, [fadeValues, scaleValues, phraseTimings, animationDuration, phrases]);
 
-  const { playBackgroundSound } = useContext(AudioContext); // Destructure playBackgroundSound from context
-
-  useEffect(() => {
-    playBackgroundSound(); // Start playing background music when AboutScreen mounts
-  }, [playBackgroundSound]);
-
   const handlePress = () => {
     navigation.navigate('Welcome');
   };
-
 
   if (!fontLoaded) {
     return (
@@ -207,6 +198,5 @@ const styles = StyleSheet.create({
     textShadowRadius: 10,
   },
 });
-
 
 export default AboutScreen;
