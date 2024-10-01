@@ -160,7 +160,7 @@ const LoveQuestion = () => {
           {isPlayerReady && !areBothReady && (
             <View style={styles.loaderContainer}>
               <ActivityIndicator size="small" color="#FF4B4B" />
-              <Text style={styles.waitingText}>Waiting for the other player...</Text>
+              <Text style={styles.waitingText}>Waiting for your partner...</Text>
             </View>
           )}
 

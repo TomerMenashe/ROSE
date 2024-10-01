@@ -342,7 +342,6 @@ exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
     const prompt = `Please analyze this image and ensure the following conditions are met:
     1. This is a selfie image.
     2. The full face should be visible in the frame.
-    3. The face should be centered in the frame.
     
     take into consideration that some phones have low quality front cameras, so the image might not be perfect.
     If this image is a selfie that meets the conditions, respond only with the word: yes (without period or any other characters or words).
