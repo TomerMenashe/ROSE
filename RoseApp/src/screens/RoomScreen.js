@@ -1,514 +1,290 @@
-// index.js
+// RoomScreen.js
 
-const functions = require('firebase-functions');
-const admin = require('firebase-admin');
-const axios = require('axios');
-const { getStorage } = require('firebase-admin/storage');
-const segmindApiKey = functions.config().segmind.api_key;
-const items = [
-  "bra",
-  "headphones",
-  "condom",
-  "thong",
-  "toothbrush",
-  "laptop",
-  "tv remote",
-  "tomato",
-  "toilet brush",
-  "bottle opener",
-  "Boxers underpants",
-  "ice",
-  "glass of water",
-];
-const crypto = require('crypto');
-const { URL } = require('url');
-const pLimit = require('p-limit');
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  Dimensions,
+  ActivityIndicator,
+  Alert,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
+import { firebase } from '../firebase/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { generatePhotoEscapeData } from '../games/photoEscape/PhotoEscapeGeneratingFunctions';
+import usePreventBack from '../components/usePreventBack';
 
-// Initialize Firebase Admin SDK
-admin.initializeApp();
+const { height, width } = Dimensions.get('window');
 
-/**
- * Encodes an image buffer to a Base64 string.
- *
- * @param {Buffer} imageBuffer - The buffer of the image.
- * @return {string} - The Base64 encoded string of the image.
- */
-function encodeImage(imageBuffer) {
-  return imageBuffer.toString('base64');
-}
+const RoomScreen = () => {
+  usePreventBack();
+  const [participants, setParticipants] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [countdown, setCountdown] = useState(null);
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { pin, name, selfieURL } = route.params || {};
 
-/**
- * Generates a response from the OpenAI GPT-4 model.
- *
- * @param {string} model - The model to use.
- * @param {number} temperature - The temperature setting for the model.
- * @param {string} typeOfResponse - The type of response ("text" or "image").
- * @param {string} query - The text query for the model.
- * @param {Buffer} imgBuffer - The image buffer if needed.
- * @param {number} maxTokens - The maximum number of tokens.
- * @return {Promise<string>} - The response from the model.
- */
-async function generateResponse(
-    model = 'gpt-4o-mini',
-    temperature = 0.7,
-    typeOfResponse = 'text',
-    query = null,
-    imgBuffer = null,
-    maxTokens = 100
-) {
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${functions.config().openai.key}`,
-  };
+  // Initialize Firebase functions
+  const functions = getFunctions(firebase.app(), 'europe-west1');
 
-  const content = [{ type: typeOfResponse, text: query }];
+  const alreadyGeneratedItemRef = useRef(false);
+  const faceSwapCallRef = useRef(false);
+  const roomCreator = useRef(false);
+  const roomRef = firebase.database().ref(`room/${pin}`);
 
-  if (imgBuffer) {
-    const encodedImage = encodeImage(imgBuffer);
-    content.push({
-      type: 'image_url',
-      image_url: { url: `data:image/jpeg;base64,${encodedImage}` },
-    });
-  }
+  useEffect(() => {
+    // Listen for changes in participants
+    const participantListener = roomRef.child('participants').on('value', (snapshot) => {
+      if (snapshot.exists()) {
+        const participantsData = snapshot.val();
+        const participantsList = Object.values(participantsData);
+        setParticipants(participantsList);
 
-  const payload = {
-    model: model,
-    temperature: temperature,
-    messages: [{ role: 'user', content: content }],
-    max_tokens: maxTokens,
-  };
-
-  const response = await axios.post('https://api.openai.com/v1/chat/completions', payload, {
-    headers: headers,
-  });
-
-  const data = response.data;
-  if (data.choices && data.choices.length > 0) {
-    return data.choices[0].message.content;
-  } else {
-    throw new Error('Invalid response from OpenAI API');
-  }
-}
-
-/**
- * Callable function to perform multiple face swaps using images stored in Firebase Storage.
- *
- * @param {object} data - The data containing user1URL, user2URL, and pin.
- * @returns {Promise<object>} - An object indicating the success of the operation.
- */
-exports.swapFaces = functions
-    .region('europe-west1')
-    .runWith({ timeoutSeconds: 540, memory: '2GB' })
-    .https.onCall(async (data, _context) => {
-      const { user1URL, user2URL, pin } = data;
-
-      try {
-        console.log(`Starting swapFaces for pin: ${pin}`);
-
-        const storage = getStorage();
-        const database = admin.database();
-
-        /**
-         * Fetches and encodes an image from a given URL.
-         *
-         * @param {string} url - The URL of the image.
-         * @returns {Promise<string>} - A promise that resolves to the Base64 encoded image.
-         */
-        async function fetchAndEncodeImage(url) {
-          console.log(`Fetching image from URL: ${url}`);
-          const response = await axios.get(url, { responseType: 'arraybuffer' });
-          console.log(`Image fetched and encoded from URL: ${url}`);
-          return encodeImage(response.data);
+        if (participantsList.length === 1 && !alreadyGeneratedItemRef.current) {
+          alreadyGeneratedItemRef.current = true;
+          roomCreator.current = true;
+          generatePhotoEscapeData(pin)
+              .then(() => {
+                console.log('Photo escape data generated successfully.');
+              })
+              .catch((error) => {
+                console.error('[RoomScreen] Error generating PhotoEscape data:', error);
+                Alert.alert('Error', 'Failed to generate PhotoEscape data.');
+              });
         }
 
-        /**
-         * Retrieves the list of target images from Firebase Storage.
-         *
-         * @returns {Promise<object[]>} - A promise that resolves to an array of target image files.
-         */
-        async function getTargetImages() {
-          const bucket = storage.bucket();
-          const [allFiles] = await bucket.getFiles({ prefix: 'FaceSwapTargets/' });
-          console.log(`Number of files retrieved from 'FaceSwapTargets/': ${allFiles.length}`);
-          allFiles.forEach((file, idx) => console.log(`File ${idx}: ${file.name}`));
+        if (participantsList.length === 2) {
+          setIsLoading(false);
 
-          if (allFiles.length === 0) {
-            throw new Error("No target images available in 'FaceSwapTargets/' directory.");
-          }
+          // Set 'gameStarted' to true in Firebase
+          roomRef
+              .update({ gameStarted: true })
+              .then(() => {
+                // You can handle post-update actions here if needed
+              })
+              .catch((error) => {
+                console.error('[RoomScreen] Error setting gameStarted:', error);
+                Alert.alert('Error', 'Failed to start the game.');
+              });
 
-          // Filter out directories (if any)
-          const imageFiles = allFiles.filter((file) => !file.name.endsWith('/'));
-
-          // Sort files to ensure consistent ordering
-          imageFiles.sort((a, b) => a.name.localeCompare(b.name));
-          return imageFiles;
-        }
-
-        /**
-         * Calls the face swap API with the given source and target images.
-         *
-         * @param {string} sourceImage - The Base64 encoded source image.
-         * @param {string} targetImage - The Base64 encoded target image.
-         * @returns {Promise<string>} - A promise that resolves to the Base64 encoded swapped image.
-         */
-        async function callFaceSwapAPI(sourceImage, targetImage) {
-          const data = {
-            source_img: sourceImage,
-            target_img: targetImage,
-            input_faces_index: 0,
-            source_faces_index: 0,
-            face_restore: 'codeformer-v0.1.0.pth',
-            base64: true,
-          };
-          const response = await axios.post('https://api.segmind.com/v1/faceswap-v2', data, {
-            headers: { 'x-api-key': segmindApiKey },
-          });
-          if (response.data.image) {
-            return response.data.image;
-          } else {
-            throw new Error('Face swap API did not return an image.');
+          // Start the 5-second countdown only once
+          if (countdown === null) {
+            setCountdown(5);
           }
         }
-
-        /**
-         * Saves an image buffer to Firebase Storage and returns its signed URL.
-         *
-         * @param {Buffer} buffer - The image buffer.
-         * @param {string} filePath - The storage path where the image will be saved.
-         * @returns {Promise<string>} - A promise that resolves to the signed URL of the saved image.
-         */
-        async function saveImageToStorage(buffer, filePath) {
-          const bucket = storage.bucket();
-          const file = bucket.file(filePath);
-          await file.save(buffer, { contentType: 'image/jpeg' });
-          const [downloadURL] = await file.getSignedUrl({ action: 'read', expires: '03-01-2500' });
-          return downloadURL;
-        }
-
-        /**
-         * Updates the Firebase Realtime Database with the new face swap URLs.
-         *
-         * @param {string} finalURL1 - The URL of the first swapped image.
-         * @param {string} finalURL2 - The URL of the second swapped image.
-         */
-        async function updateDatabase(finalURL1, finalURL2) {
-          const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
-          await faceSwapRef.set({
-            url1: [finalURL1], // Store as an array
-            url2: [finalURL2], // Store as an array
-          });
-        }
-
-        /**
-         * Processes a face swap for the given index.
-         *
-         * @param {number} index - The index of the target image.
-         * @param {object[]} allFiles - The array of all target image files.
-         */
-        async function processFaceSwapAtIndex(index, allFiles) {
-          if (index < 0 || index >= allFiles.length) {
-            console.error(`Index ${index} is out of bounds for allFiles with length ${allFiles.length}`);
-            throw new Error(`Index ${index} is out of bounds for target images.`);
-          }
-
-          // Fetch target image
-          const file = allFiles[index];
-          console.log(`Processing face swap at index ${index} with file: ${file.name}`);
-          const targetImageBufferArray = await file.download();
-          const targetImageBuffer = targetImageBufferArray[0];
-          const targetImage = encodeImage(targetImageBuffer);
-          const targetImageName = file.name;
-
-          // Call face swap API for both users
-          const [swappedImage1Base64, swappedImage2Base64] = await Promise.all([
-            callFaceSwapAPI(sourceImage1, targetImage),
-            callFaceSwapAPI(sourceImage2, targetImage),
-          ]);
-
-          // Convert base64 images to buffers
-          const buffer1 = Buffer.from(swappedImage1Base64, 'base64');
-          const buffer2 = Buffer.from(swappedImage2Base64, 'base64');
-
-          // Generate unique filenames
-          const uniqueId1 = crypto.createHash('md5').update(user1URL + targetImageName + index).digest('hex');
-          const uniqueId2 = crypto.createHash('md5').update(user2URL + targetImageName + index).digest('hex');
-          const filePath1 = `room/${pin}/faceSwaps/${uniqueId1}_1.jpg`;
-          const filePath2 = `room/${pin}/faceSwaps/${uniqueId2}_2.jpg`;
-
-          // Save images to storage and get download URLs
-          console.log(`Saving swapped images for index ${index} to storage...`);
-          const [finalURL1, finalURL2] = await Promise.all([
-            saveImageToStorage(buffer1, filePath1),
-            saveImageToStorage(buffer2, filePath2),
-          ]);
-
-          // Update the database
-          console.log(`Updating database with new face swap URLs for index ${index}...`);
-          await updateDatabase(finalURL1, finalURL2);
-        }
-
-        // Main logic starts here
-        // Fetch and encode the users' images
-        console.log('Fetching and encoding source images...');
-        const [sourceImage1, sourceImage2] = await Promise.all([
-          fetchAndEncodeImage(user1URL),
-          fetchAndEncodeImage(user2URL),
-        ]);
-
-        // Get list of target images
-        const allFiles = await getTargetImages();
-
-        // Check if we have enough target images
-        const requiredSwaps = 8;
-        if (allFiles.length < requiredSwaps) {
-          throw new Error(
-              `Not enough target images. Required: ${requiredSwaps}, Available: ${allFiles.length}`
-          );
-        }
-
-        // Retrieve or generate indices
-        const indicesRef = database.ref(`room/${pin}/faceSwapIndices`);
-        let indicesSnapshot = await indicesRef.once('value');
-        let chosenIndices;
-
-        if (indicesSnapshot.exists()) {
-          chosenIndices = indicesSnapshot.val();
-          console.log(`Retrieved existing indices for pin ${pin}: ${chosenIndices}`);
-        } else {
-          // Generate random indices
-          const numFiles = allFiles.length;
-          const indicesArray = Array.from({ length: numFiles }, (_, i) => i);
-          // Shuffle indices
-          for (let i = indicesArray.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [indicesArray[i], indicesArray[j]] = [indicesArray[j], indicesArray[i]];
-          }
-
-          chosenIndices = indicesArray.slice(0, requiredSwaps);
-          console.log(`Generated new indices for pin ${pin}: ${chosenIndices}`);
-          // Store indices in database
-          await indicesRef.set(chosenIndices);
-        }
-
-        // Limit concurrency
-        const limit = pLimit(3); // Adjust concurrency limit as needed
-
-        // Process face swaps with limited concurrency
-        await Promise.all(
-            chosenIndices.map((index) =>
-                limit(() => {
-                  return processFaceSwapAtIndex(index, allFiles).catch((error) => {
-                    console.error(`Error processing face swap at index ${index}:`, error);
-                    // Optionally handle retries or log the error
-                  });
-                })
-            )
-        );
-
-        console.log('All face swaps completed successfully.');
-        return { success: true };
-      } catch (error) {
-        console.error('swapFaces Error:', error);
-        throw new functions.https.HttpsError('internal', error.message);
+      } else {
+        setParticipants([]);
       }
     });
 
-/**
- * Callable function to get a random item.
- */
-exports.getRandomItem = functions.region('europe-west1').https.onCall(async (_data, _context) => {
-  return items[Math.floor(Math.random() * items.length)];
-});
+    return () => {
+      roomRef.child('participants').off('value', participantListener);
+    };
+  }, [pin, navigation, name, selfieURL, countdown]);
 
-// eslint-disable-next-line no-unused-vars
-exports.isItemInImage = functions.region('europe-west1').https.onCall(async (data, _context) => {
-  try {
-    const {currentItem, image} = data;
+  // Countdown effect
+  useEffect(() => {
+    let timerId;
 
-    if (!currentItem || !image) {
-      throw new functions.https.HttpsError("invalid-argument", "currentItem and image are required.");
+    if (countdown > 0) {
+      timerId = setTimeout(() => setCountdown(countdown - 1), 1000);
+    } else if (countdown === 0) {
+      if (!faceSwapCallRef.current && roomCreator.current) {
+        faceSwapCallRef.current = true;
+        console.log('RoomScreen: Starting face swaps');
+
+        // Call swapFaces cloud function
+        const swapFaces = httpsCallable(functions, 'swapFaces');
+
+        (async () => {
+          try {
+            // Fetch the participants' selfie URLs
+            const usersURLS = participants.map((participant) => participant.selfieURL);
+
+            // Call swapFaces cloud function once
+            await swapFaces({
+              user1URL: usersURLS[0],
+              user2URL: usersURLS[1],
+              pin: pin,
+            });
+
+            console.log('Face swaps initiated successfully.');
+          } catch (error) {
+            console.error('[RoomScreen] Error initiating face swaps:', error);
+          }
+        })();
+      }
+      // Navigate to GameController
+      navigation.navigate('GameController', { pin, name, selfieURL });
     }
 
-    // Decode the image from Base64
-    const imgBuffer = Buffer.from(image, "base64");
+    return () => clearTimeout(timerId);
+  }, [countdown, navigation, pin, name, selfieURL, participants]);
 
-    const response = await generateResponse(
-        "gpt-4o",
-        0.7,
-        "text",
-        `Is there ${currentItem} in the image? Answer using only Yes or No.`,
-        imgBuffer,
-        3,
+  if (!pin) {
+    return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error: No game PIN provided.</Text>
+        </View>
     );
-
-    const isPresent = response.toLowerCase().includes("yes");
-    return {isPresent};
-  } catch (error) {
-    console.error(error);
-    throw new functions.https.HttpsError("internal", error.message);
   }
-});
 
-exports.isValidSelfie = functions.region('europe-west1').https.onCall(async (data, _context) => {
-  try {
-    const {image} = data;
-
-    if (!image) {
-      throw new functions.https.HttpsError("invalid-argument", "Image is required.");
+  // Define the leaveRoom function
+  const leaveRoom = async () => {
+    try {
+      await roomRef.child('LeaveRoom').set('LeaveTheRoomNow!');
+    } catch (error) {
+      console.error('[RoomScreen] Error leaving room:', error);
+      Alert.alert('Error', 'Failed to leave the room.');
     }
-    const prompt = `Please analyze this image and ensure the following conditions are met:
-    1. This is a selfie image.
-    2. The full face should be visible in the frame.
-    
-    take into consideration that some phones have low quality front cameras, so the image might not be perfect.
-    If this image is a good selfie, respond only with the word: yes (without period or any other characters or words).
-    
-    Else,
-      respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie.
-      make sure that the sarcastic comment also explains how to fix the selfie. 
-      In overall, make the response funny and sarcastic, and in a length suited for a pop up message on a mobile phone.`;
+  };
 
-    const imgBuffer = Buffer.from(image, "base64");
-    const response = await generateResponse(
-        "gpt-4o",
-        0.7,
-        "text",
-        prompt,
-        imgBuffer,
-        100,
-    );
-    return {response};
-  } catch (error) {
-    console.error(error);
-    throw new functions.https.HttpsError("internal", error.message);
-  }
+  // Listen for LeaveRoom changes
+  useEffect(() => {
+    const leaveRoomListener = roomRef.child('LeaveRoom').on('value', async (snapshot) => {
+      if (snapshot.exists()) {
+        try {
+          // Remove any active listeners to prevent `currentGameIndex` from being recreated
+          roomRef.child('currentGameIndex').off();
+          roomRef.child('playersInGameControl').off();
+
+          // Remove `currentGameIndex` first
+          await roomRef.child('currentGameIndex').remove();
+
+          // Then remove the participants in the room
+          await roomRef.remove();
+
+          // Navigate back to the Home screen
+          navigation.replace('Home', { name, selfieURL });
+        } catch (error) {
+          console.error('[RoomScreen] Error during room cleanup:', error);
+          Alert.alert('Error', 'Failed to clean up the room.');
+        }
+      }
+    });
+
+    return () => {
+      roomRef.child('LeaveRoom').off('value', leaveRoomListener);
+    };
+  }, [name, selfieURL, pin, navigation]);
+
+  return (
+      <ImageBackground
+          source={require('../../assets/joinGame.jpeg')}
+          style={styles.background}
+          resizeMode="cover"
+      >
+        <View style={styles.container}>
+          <Text style={styles.title}>Room PIN: {pin}</Text>
+
+          {/* Display the participants' names and images */}
+          {participants.length > 0 ? (
+              participants.map((participant, index) => (
+                  <View key={index} style={styles.participantContainer}>
+                    <Image source={{ uri: participant.selfieURL }} style={styles.selfieImage} />
+                    <Text style={styles.participantText}>{participant.name}</Text>
+                  </View>
+              ))
+          ) : (
+              <Text style={styles.participantText}>No participants yet.</Text>
+          )}
+
+          {isLoading ? (
+              <>
+                <ActivityIndicator size="large" color="#FFFFFF" />
+                <Text style={styles.loadingText}>Waiting for players...</Text>
+              </>
+          ) : countdown !== null ? (
+              <Text style={styles.loadingText}>
+                Starting game in {countdown} second{countdown !== 1 ? 's' : ''}...
+              </Text>
+          ) : (
+              <Text style={styles.loadingText}>Players connected! Starting game...</Text>
+          )}
+
+          <TouchableOpacity
+              style={[styles.downloadAllButton, styles.enhancedButton]}
+              onPress={leaveRoom}
+          >
+            <Text style={styles.buttonText}>{'Leave Room'}</Text>
+          </TouchableOpacity>
+        </View>
+      </ImageBackground>
+  );
+};
+
+const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
+  },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 40,
+  },
+  participantContainer: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  participantText: {
+    fontSize: 24,
+    color: '#FFFFFF',
+    marginBottom: 10,
+  },
+  selfieImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 5,
+    borderColor: '#FFCC00',
+    borderWidth: 2,
+  },
+  loadingText: {
+    fontSize: 20,
+    color: '#FFFFFF',
+    marginTop: 20,
+    textAlign: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FF4B4B',
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#FFFFFF',
+  },
+  downloadAllButton: {
+    position: 'absolute',
+    top: 65,
+    left: 20,
+    padding: 10,
+    backgroundColor: '#FF4B4B',
+    borderRadius: 5,
+  },
+  enhancedButton: {
+    // Additional styling if needed
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    textAlign: 'center',
+  },
 });
 
-// eslint-disable-next-line no-unused-vars
-exports.testGenerateResponse = functions.region('europe-west1').https.onCall(async (_data, _context) => {
-  try {
-    const testQuery = "'write a hard riddle where the answer is one Spider-man's villain but don't tell who .'";
-    const response = await generateResponse(
-        "gpt-4o-mini",
-        0.7,
-        "text",
-        testQuery,
-        null,
-        50,
-    );
-
-    return {response};
-  } catch (error) {
-    console.error(error);
-    throw new functions.https.HttpsError("internal", error.message);
-  }
-});
-
-/**
- * Callable function to get Hamshir about a given item.
- *
- * @param {object} data - The data payload containing the item.
- * @param {string} data.item - The name of the item to get an opinion on.
- * @returns {Promise<object>} - An object containing Hamshir.
- */
-// eslint-disable-next-line no-unused-vars
-exports.getHamshir = functions.region('europe-west1').https.onCall(async (data, _context) => {
-  try {
-    const {item} = data;
-
-    if (!item) {
-      throw new functions.https.HttpsError(
-          "invalid-argument",
-          "The function must be called with an \"item\" argument.",
-      );
-    }
-
-    const prompt = `write a small short poem that is also a funny rhymed riddle about the item: ${item}.
-        instructions:
-        1. the person who reads this short poem will need to guess that the item behind it is: ${item}.
-        2. make it funny.
-        3. Make it easy to guess.
-        4. keep it 4 rows long.
-        5. dont write back anything but the poem rhymed riddle.
-        6. use simple and easy to understand language
-        7. use common english words that can be understood by a 15 year old.
-
-        here is an example for the item "bra":
-
-        I have two cups but hold no tea,
-        Straps and hooks are parts of me.
-        I support you throughout the day,
-        Under your shirt is where I stay.`;
-
-    const response = await generateResponse(
-        "gpt-4o-mini",
-        0.7,
-        "text",
-        prompt,
-        null,
-        150,
-    );
-
-    return {response};
-  } catch (error) {
-    console.error(error);
-    throw new functions.https.HttpsError("internal", error.message);
-  }
-});
-
-exports.getPersonalQuestionFeedback = functions.region('europe-west1').https.onCall(async (data, _context) => {
-  try {
-    const { pin, subjectName, subjectAnswer, guesserName, guesserGuess, question } = data;
-
-    if (!pin || !question || !subjectAnswer || !guesserGuess) {
-      throw new functions.https.HttpsError(
-          "invalid-argument",
-          "Pin, question, and both answers are required."
-      );
-    }
-
-    const feedbackRef = admin.database().ref(`room/${pin}/personalQuestion/feedback`);
-
-    // Use a transaction to ensure only one generation occurs
-    const feedbackSnapshot = await feedbackRef.once('value');
-
-    if (feedbackSnapshot.exists()) {
-      // Feedback already exists, return it
-      const existingFeedback = feedbackSnapshot.val();
-      return { response: existingFeedback };
-    } else {
-      // Feedback doesn't exist, generate it
-      const prompt = `We play a couples game, and we asked both ${subjectName} and ${guesserName} this question: ${question}.
-        ${subjectName} answered: ${subjectAnswer},
-        ${guesserName} guessed: ${guesserGuess},
-        if the answers are similar to each other or logically connected, write back a happy, positive and a bit sarcastic response,
-        that confirms that they know each other quite well and they should be proud of themselves.
-        if the answers are not similar to each other or not logically connected, write back a sarcastic response,
-        and tell them that they should try to know each other better.
-        what ever the case, make your comment length suited for a pop up message on a mobile phone, and use common english words that can be understood by a 15 year old.
-        `;
-
-      // Generate response using GPT
-      const gptResponse = await generateResponse(
-          "gpt-4o-mini",
-          0.7,
-          "text",
-          prompt,
-          null,
-          1000
-      );
-
-      // Store the generated feedback in the database
-      await feedbackRef.set(gptResponse);
-
-      return { response: gptResponse };
-    }
-  } catch (error) {
-    console.error("getPersonalQuestionFeedback Error:", error);
-    throw new functions.https.HttpsError("internal", error.message);
-  }
-});
-
-exports.getRandomItem = functions.region('europe-west1').https.onCall(async (_data, _context) => {
-  return items[Math.floor(Math.random() * items.length)];
-});
+export default RoomScreen;
