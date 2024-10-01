@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "RoseApp",
+    "slug": "RoseApp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "jsEngine": "hermes",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.roseapp.app"  
+    },
+    "android": {
+      "package": "com.roseapp.app", 
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "platforms": ["ios", "android", "web"],  
+    "assetBundlePatterns": [
+      "**/*"  
+    ],
+    "updates": {
+      "fallbackToCacheTimeout": 0  
+    },
+    "notification": {
+      "icon": "./assets/notification-icon.png",  
+      "color": "#ffffff"  
+    },
+    "extra": {
+      "firebaseApiKey": "AIzaSyDiItjO6oPQQs_eefladHcOLnGACmMq0yU",
+      "firebaseAuthDomain": "rose-date.firebaseapp.com",
+      "firebaseDatabaseURL": "https://rose-date-default-rtdb.europe-west1.firebasedatabase.app",
+      "firebaseProjectId": "rose-date",
+      "firebaseStorageBucket": "rose-date.appspot.com",
+      "firebaseMessagingSenderId": "326707440146",
+      "firebaseAppId": "1:326707440146:web:6a3578a9e0a2c41462c6cb",
+      "firebaseMeasurementId": "G-8VC2VJLB04"
+    }
+  }
+}
