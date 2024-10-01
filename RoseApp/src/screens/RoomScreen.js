@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useContext } from 'react'; // Added useContext
 import { View, Text, StyleSheet, ImageBackground, Dimensions, ActivityIndicator, Alert, Image } from 'react-native';
 import { firebase } from '../firebase/firebase';
-import { getFunctions } from 'firebase/functions';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { generatePhotoEscapeData } from '../games/photoEscape/PhotoEscapeGeneratingFunctions';
 import { generateFaceSwaps } from '../games/memoryGame/MemoryGameFaceSwapFunctions';
@@ -30,15 +30,13 @@ const RoomScreen = () => {
 
   const { stopBackgroundSound } = useContext(AudioContext); // Destructure stopBackgroundSound from context
 
-  // Remove the ref to prevent multiple stops since we're moving stop logic to GameController
-  // const hasStoppedSound = useRef(false);
-
   useEffect(() => {
     if (!pin) {
       Alert.alert('Error', 'No game PIN provided.');
       console.error('[RoomScreen] No game PIN provided.');
       return;
     }
+
 
     const roomRef = firebase.database().ref(`room/${pin}`);
 
@@ -72,8 +70,17 @@ const RoomScreen = () => {
             generateFaceSwaps(participantsList, pin);
           }
 
-          // Remove the stopBackgroundSound call from here
-          // stopBackgroundSound(); // Removed: Stop background music when 2 players are present
+          // Set 'gameStarted' to true in Firebase
+          roomRef.update({ gameStarted: true })
+              .then(() => {
+              })
+              .catch((error) => {
+                console.error('[RoomScreen] Error setting gameStarted:', error);
+                Alert.alert('Error', 'Failed to start the game.');
+              });
+
+          // Stop the background music
+          stopBackgroundSound(); // Added: Stop background music when 2 players are present
 
           // Start the 5-second countdown only once
           if (countdown === null) {
@@ -88,16 +95,16 @@ const RoomScreen = () => {
     return () => {
       roomRef.child('participants').off('value', participantListener);
     };
-  }, [pin, navigation, functions, name, selfieURL, countdown /*, stopBackgroundSound */]); // Removed stopBackgroundSound from dependencies
+  }, [pin, navigation, functions, name, selfieURL, countdown, stopBackgroundSound]); // Added stopBackgroundSound to dependencies
 
-  // Countdown logic remains the same
+  // Countdown effect
   useEffect(() => {
     let timerId;
 
     if (countdown > 0) {
       timerId = setTimeout(() => setCountdown(countdown - 1), 1000);
     } else if (countdown === 0) {
-      // Proceed to navigate to GameController
+      // Corrected navigation call: pass parameters directly
       navigation.navigate('GameController', { pin, name, selfieURL });
     }
 
