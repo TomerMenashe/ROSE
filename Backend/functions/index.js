@@ -316,7 +316,7 @@ exports.isItemInImage = functions.https.onCall(async (data, _context) => {
     const imgBuffer = Buffer.from(image, "base64");
 
     const response = await generateResponse(
-        "gpt-4o",
+        "gpt-4o-mini",
         0.7,
         "text",
         `Is there ${currentItem} in the image? Answer using only Yes or No.`,
@@ -341,17 +341,15 @@ exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
     }
     const prompt = `Please analyze this image and ensure the following conditions are met:
     1. This is a selfie image.
-    2. The full face should be visible.
+    2. The full face should be visible in the frame.
     3. The face should be centered in the frame.
-    4. The subjects face should be relatively upright, not tilted in an extreme angle.
-    5. No large obstructions (e.g., sunglasses, hats) should cover key facial features such as the eyes, nose, and mouth.
     
     take into consideration that some phones have low quality front cameras, so the image might not be perfect.
     If this image is a selfie that meets the conditions, respond only with the word: yes (without period or any other characters or words).
     
     Else,
-      If this image is a selfie that is close but not good enough, respond with a SARCASTIC comment that also explain what is needed to be done to take the selfie correctly.
-      If this iamge is a really bad selfie or not quite a selfie, respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie. 
+      If this iamge is a really bad selfie or not quite a selfie, respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie.
+      make sure that the sarcastic comment also explains how to fix the selfie. 
       In overall, make the response funny and sarcastic, and in a length suited for a pop up message on a mobile phone.`;
 
     const imgBuffer = Buffer.from(image, "base64");
@@ -375,7 +373,7 @@ exports.testGenerateResponse = functions.https.onCall(async (_data, _context) =>
   try {
     const testQuery = "'write a hard riddle where the answer is one Spider-man's villain but don't tell who .'";
     const response = await generateResponse(
-        "gpt-4o",
+        "gpt-4o-mini",
         0.7,
         "text",
         testQuery,
