@@ -71,6 +71,9 @@ const PersonalQuestion = () => {
 
           currentRole = name === assignedSubjectName ? 'Subject' : 'Guesser';
           setRole(currentRole);
+
+          // Use assignedSubjectName directly for replacement
+          subjectNameForReplacement = assignedSubjectName;
         } else {
           // Roles already set, get them
           const rolesData = rolesSnapshot.val();
@@ -79,6 +82,9 @@ const PersonalQuestion = () => {
 
           currentRole = name === rolesData.subjectName ? 'Subject' : 'Guesser';
           setRole(currentRole);
+
+          // Use rolesData.subjectName directly for replacement
+          subjectNameForReplacement = rolesData.subjectName;
         }
 
 
@@ -94,8 +100,8 @@ const PersonalQuestion = () => {
           const questions = content.split('\n').filter(q => q.trim() !== '');
           const randomQuestion = questions[Math.floor(Math.random() * questions.length)];
 
-          // Replace {name} with subjectName
-          const filledQuestion = randomQuestion.replace(/{name}/g, subjectName);
+          // Replace {name} with subjectNameForReplacement
+          const filledQuestion = randomQuestion.replace(/{name}/g, subjectNameForReplacement);
 
           // Store question in database
           await roomRef.child('question').set(filledQuestion);
@@ -106,8 +112,10 @@ const PersonalQuestion = () => {
           // Question already exists
           const existingQuestion = questionSnapshot.val();
 
-          // Replace {name} with subjectName in case it's not yet replaced
-          const filledQuestion = existingQuestion.replace(/{name}/g, subjectName);
+          // Replace {name} with subjectNameForReplacement if needed
+          const filledQuestion = existingQuestion.includes('{name}')
+            ? existingQuestion.replace(/{name}/g, subjectNameForReplacement)
+            : existingQuestion;
 
           setQuestion(filledQuestion);
         }
@@ -128,7 +136,7 @@ const PersonalQuestion = () => {
     scaleValue.value = withTiming(1, { duration: 2000, easing: Easing.out(Easing.ease) });
 
     return () => {};
-  }, [pin, name, navigation, fadeValue, scaleValue, subjectName, role]);
+  }, [pin, name, navigation, fadeValue, scaleValue]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: fadeValue.value,
