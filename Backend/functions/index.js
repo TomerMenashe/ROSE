@@ -163,7 +163,7 @@ exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _
 
         // API calls
         console.log(`Calling MemoryGame API for target image ${file.name}...`);
-        if(alreadyPushedUrlCount >= 8)
+        if(alreadyPushedUrlCount >= 16)
           return;
         const [response1, response2] = await Promise.all([
           axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": segmindApiKey } }),
@@ -206,7 +206,7 @@ exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _
           const finalURL2 = downloadURL2[0];
 
           // Use push() to add entries
-          if (alreadyPushedUrlCount >= 8)
+          if (alreadyPushedUrlCount >= 16)
             return;
           const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
           await faceSwapRef.set({
