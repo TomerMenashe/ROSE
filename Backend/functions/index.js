@@ -23,7 +23,7 @@ function encodeImage(imageBuffer) {
 /**
  * Generates a response from the OpenAI GPT-4 model.
  */
-async function generateResponse(model = "gpt-4o", temperature = 0.7, typeOfResponse = "text", query = null, imgBuffer = null, maxTokens = 100) {
+async function generateResponse(model = "gpt-4o-mini", temperature = 0.7, typeOfResponse = "text", query = null, imgBuffer = null, maxTokens = 100) {
   const headers = {
     "Content-Type": "application/json",
     "Authorization": `Bearer ${functions.config().openai.key}`,
@@ -341,11 +341,12 @@ exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
     }
     const prompt = `Please analyze this image and ensure the following conditions are met:
     1. This is a selfie image.
-    2. The face should be clearly visible, in focus, and not blurry.
-    3. The face should be centered in the frame, occupying a significant portion of the image.
-    4. The subjects face should be upright, not tilted at extreme angles.
+    2. The full face should be visible.
+    3. The face should be centered in the frame.
+    4. The subjects face should be relatively upright, not tilted in an extreme angle.
     5. No large obstructions (e.g., sunglasses, hats) should cover key facial features such as the eyes, nose, and mouth.
     
+    take into consideration that some phones have low quality front cameras, so the image might not be perfect.
     If this image is a selfie that meets the conditions, respond only with the word: yes (without period or any other characters or words).
     
     Else,
@@ -425,7 +426,7 @@ exports.getHamshir = functions.https.onCall(async (data, _context) => {
         Under your shirt is where I stay.`;
 
     const response = await generateResponse(
-        "gpt-4o",
+        "gpt-4o-mini",
         0.7,
         "text",
         prompt,
