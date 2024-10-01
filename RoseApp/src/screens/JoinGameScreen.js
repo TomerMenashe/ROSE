@@ -14,7 +14,7 @@ const JoinGameScreen = () => {
   const navigation = useNavigation();
   const { params } = useRoute();
   const name = params?.name;
-  const selfieURL = params?.imageUrl;
+  const selfieURL = params?.selfieURL;
 
   const handleJoinGame = () => {
     if (!name || !selfieURL) {

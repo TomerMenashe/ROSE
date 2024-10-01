@@ -110,7 +110,7 @@ const SelfieScreen = () => {
                 [
                     {
                         text: 'OK',
-                        onPress: () => navigation.replace('Home', { name, imageUrl: downloadURL }),
+                        onPress: () => navigation.replace('Home', { name, selfieURL: downloadURL }),
                     },
                 ],
                 { cancelable: false }

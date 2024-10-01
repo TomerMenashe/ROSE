@@ -1,7 +1,17 @@
 // RoomScreen.js
 
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, ImageBackground, Dimensions, ActivityIndicator, Alert, Image } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  Dimensions,
+  ActivityIndicator,
+  Alert,
+  Image,
+  TouchableOpacity
+} from 'react-native';
 import { firebase } from '../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -20,7 +30,6 @@ const RoomScreen = () => {
   const navigation = useNavigation();
   const { pin, name, selfieURL } = route.params || {}; // Get the pin, name, and selfieURL from route params
 
-
   // Initialize Firebase functions
   const functions = getFunctions(firebase.app(), 'us-central1');
 
@@ -28,24 +37,15 @@ const RoomScreen = () => {
   const alreadyGeneratedItemRef = useRef(false);
   const faceSwapCallRef = useRef(false);
   const roomCreator = useRef(false);
+  const roomRef = firebase.database().ref(`room/${pin}`);
 
   useEffect(() => {
-    if (!pin) {
-      Alert.alert('Error', 'No game PIN provided.');
-      console.error('[RoomScreen] No game PIN provided.');
-      return;
-    }
-
-
-    const roomRef = firebase.database().ref(`room/${pin}`);
-
     // Listen for changes in participants
     const participantListener = roomRef.child('participants').on('value', (snapshot) => {
       if (snapshot.exists()) {
         const participantsData = snapshot.val();
         const participantsList = Object.values(participantsData);
         setParticipants(participantsList);
-
 
         if (participantsList.length === 1 && !alreadyGeneratedItemRef.current) {
           alreadyGeneratedItemRef.current = true;
@@ -72,6 +72,7 @@ const RoomScreen = () => {
           // Set 'gameStarted' to true in Firebase
           roomRef.update({ gameStarted: true })
               .then(() => {
+                // You can handle post-update actions here if needed
               })
               .catch((error) => {
                 console.error('[RoomScreen] Error setting gameStarted:', error);
@@ -115,6 +116,45 @@ const RoomScreen = () => {
     );
   }
 
+  // Define the leaveRoom function
+  const leaveRoom = async () => {
+    try {
+      await roomRef.child('LeaveRoom').set("LeaveTheRoomNow!");
+    } catch (error) {
+      console.error('[RoomScreen] Error leaving room:', error);
+      Alert.alert('Error', 'Failed to leave the room.');
+    }
+  };
+
+  // Listen for LeaveRoom changes
+  useEffect(() => {
+    const leaveRoomListener = roomRef.child('LeaveRoom').on('value', async (snapshot) => {
+      if (snapshot.exists()) {
+        try {
+          // Remove any active listeners to prevent `currentGameIndex` from being recreated
+          roomRef.child('currentGameIndex').off();
+          roomRef.child('playersInGameControl').off();
+
+          // Remove `currentGameIndex` first
+          await roomRef.child('currentGameIndex').remove();
+
+          // Then remove the participants in the room
+          await roomRef.remove();
+
+          // Navigate back to the Home screen
+          navigation.replace('Home', { name, selfieURL });
+        } catch (error) {
+          console.error('[RoomScreen] Error during room cleanup:', error);
+          Alert.alert('Error', 'Failed to clean up the room.');
+        }
+      }
+    });
+
+    return () => {
+      roomRef.child('LeaveRoom').off('value', leaveRoomListener);
+    };
+  }, [name, selfieURL, pin, navigation]);
+
   return (
       <ImageBackground
           source={require('../../assets/joinGame.jpeg')}
@@ -148,6 +188,15 @@ const RoomScreen = () => {
           ) : (
               <Text style={styles.loadingText}>Players connected! Starting game...</Text>
           )}
+
+          <TouchableOpacity
+              style={[styles.downloadAllButton, styles.enhancedButton]}
+              onPress={leaveRoom}
+          >
+            <Text style={styles.buttonText}>
+              {'Leave Room'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ImageBackground>
   );
@@ -192,6 +241,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: '#FFFFFF',
     marginTop: 20,
+    textAlign: 'center',
   },
   errorContainer: {
     flex: 1,
@@ -202,6 +252,20 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     color: '#FFFFFF',
+  },
+  downloadAllButton: { // Added this style to prevent undefined style error
+    padding: 10,
+    backgroundColor: '#FF4B4B',
+    borderRadius: 5,
+    marginTop: 30,
+  },
+  enhancedButton: { // Added this style to prevent undefined style error
+    // You can add additional styling here if needed
+  },
+  buttonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    textAlign: 'center',
   },
 });
 

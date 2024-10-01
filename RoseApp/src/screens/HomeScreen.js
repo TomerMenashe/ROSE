@@ -10,7 +10,7 @@ const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation, route }) => {
   usePreventBack(); // **Added Hook Call**
-  const { name, imageUrl } = route.params || {};
+  const { name, selfieURL } = route.params || {};
 
   const fadeAnim1 = useSharedValue(0);
   const fadeAnim2 = useSharedValue(0);
@@ -67,20 +67,20 @@ const HomeScreen = ({ navigation, route }) => {
           </View>
 
           {/* Display the uploaded selfie image */}
-          {imageUrl && (
-            <Image source={{ uri: imageUrl }} style={styles.selfieImage} />
+          {selfieURL && (
+            <Image source={{ uri: selfieURL }} style={styles.selfieImage} />
           )}
 
           <View style={styles.greetingContainer}>
             <Animated.Text style={[styles.greeting, animatedStyle5]}>
-              Are you ready to get in Love?
+              Are you ready to fall in Love?
             </Animated.Text>
           </View>
 
           {/* Create Game Button */}
           <CustomButton
             style={styles.button}
-            onPress={() => navigation.navigate('CreateGame', { name, imageUrl })}
+            onPress={() => navigation.navigate('CreateGame', { name, selfieURL })}
           >
             <Text style={styles.buttonText}>Create Game</Text>
           </CustomButton>
@@ -88,7 +88,7 @@ const HomeScreen = ({ navigation, route }) => {
           {/* Join Game Button */}
           <CustomButton
             style={styles.button}
-            onPress={() => navigation.navigate('JoinGame', { name, imageUrl })}
+            onPress={() => navigation.navigate('JoinGame', { name, selfieURL })}
           >
             <Text style={styles.buttonText}>Join Game</Text>
           </CustomButton>

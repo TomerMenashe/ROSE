@@ -13,7 +13,7 @@ const CreateGameScreen = () => {
   const navigation = useNavigation();
   const { params } = useRoute();
   const name = params?.name;
-  const selfieURL = params?.imageUrl;
+  const selfieURL = params?.selfieURL;
 
   function generatePin() {
     return Math.floor(1000 + Math.random() * 9000).toString();

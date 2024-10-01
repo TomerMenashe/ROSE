@@ -115,7 +115,7 @@ const PhotoEscapeLimerickScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Photo Escape</Text>
+            <Text style={styles.title}>Riddle Me This!</Text>
 
             {showInstructions ? (
                 <Animated.View style={{ opacity: fadeAnim }}>
