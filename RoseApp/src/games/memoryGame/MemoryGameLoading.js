@@ -36,7 +36,7 @@ const MemoryGameLoading = () => {
             const faceSwapsData = snapshot.val();
 
             if (faceSwapsData) {
-                const faceSwapsKeys = Object.keys(faceSwapsData).slice(0, 2); // Get first 2 faceSwaps
+                const faceSwapsKeys = Object.keys(faceSwapsData).slice(0, 8); // Get first 8 faceSwaps
 
                 let cardValues = [];
 
@@ -59,7 +59,7 @@ const MemoryGameLoading = () => {
                     }
                 });
 
-                // Check if we have at least six URLs (three pairs)
+                // Check if we have at least sixteen URLs (eight pairs)
                 if (cardValues.length >= 16) {
                     try {
                         // Shuffle the card values
@@ -98,6 +98,8 @@ const MemoryGameLoading = () => {
                         console.error('Error setting up game:', error);
                         // Do not set any error state or show alerts; keep loading
                     }
+                } else {
+                    console.warn('Not enough card values to start the game.');
                 }
             }
             // If faceSwapsData is null or insufficient, do nothing and keep loading
