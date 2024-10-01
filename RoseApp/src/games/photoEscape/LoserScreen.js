@@ -4,9 +4,11 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Image, ActivityIndicator } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {fetchItem} from "./PhotoEscapeGeneratingFunctions";
-import CustomButton from "../../../assets/Sounds/CustomButton";
+import CustomButton from "../../components/CustomButton";
+import usePreventBack from "../../components/usePreventBack";
 
 const LoserScreen = () => {
+    usePreventBack(); // **Added Hook Call**
     const navigation = useNavigation();
     const route = useRoute();
     const { item, name, selfieURL, pin, winnerImage } = route.params;

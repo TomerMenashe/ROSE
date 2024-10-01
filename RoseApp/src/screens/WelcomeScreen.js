@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, TextInput, StyleSheet, Text, ImageBackground, Pressable, Alert, Dimensions } from 'react-native';
-import CustomButton from "../../assets/Sounds/CustomButton";
+import CustomButton from "../components/CustomButton";
+import usePreventBack from "../components/usePreventBack";
 
 const { height, width } = Dimensions.get('window');  // Get the screen height and width
 
 const WelcomeScreen = ({ navigation }) => {
+  usePreventBack(); // **Added Hook Call**
   const [name, setName] = useState('');  // State for name input
   const [error, setError] = useState('');  // State for error messages
 

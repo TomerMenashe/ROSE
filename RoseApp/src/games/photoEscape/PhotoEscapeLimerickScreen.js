@@ -4,9 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
+import usePreventBack from "../../components/usePreventBack";
 
 
 const PhotoEscapeLimerickScreen = () => {
+    usePreventBack(); // **Added Hook Call**
     const navigation = useNavigation();
     const route = useRoute();
     const { pin, name, selfieURL, item, limerick } = route.params || {}; // Destructure item and limerick from route.params

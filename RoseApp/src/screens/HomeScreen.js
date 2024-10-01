@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Dimensions, Pressable, ImageBackground, ScrollView, SafeAreaView } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import CustomButton from "../../assets/Sounds/CustomButton";
+import CustomButton from "../components/CustomButton";
+import usePreventBack from "../components/usePreventBack";
 
 const { width, height } = Dimensions.get('window');
 
 const HomeScreen = ({ navigation, route }) => {
+  usePreventBack(); // **Added Hook Call**
   const { name, imageUrl } = route.params || {};
 
   const fadeAnim1 = useSharedValue(0);

@@ -7,7 +7,7 @@ const playSound = async () => {
     try {
         // Load and play the local sound file
         const { sound } = await Audio.Sound.createAsync(
-            require('./button.mp3') // Adjust the path to your local sound file
+            require('../../assets/Sounds/button.mp3') // Adjust the path to your local sound file
         );
         await sound.playAsync();
     } catch (error) {

@@ -3,8 +3,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, ImageBackground, ActivityIndicator } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
+import usePreventBack from "../../components/usePreventBack";
 
 const PhotoEscapeReadyScreen = () => {
+  usePreventBack(); // **Added Hook Call**
   const navigation = useNavigation();
   const route = useRoute();
   const { pin, name, selfieURL } = route.params || {};

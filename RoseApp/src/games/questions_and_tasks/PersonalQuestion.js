@@ -6,10 +6,12 @@ import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from '
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
 import * as FileSystem from 'expo-file-system';
+import usePreventBack from "../../components/usePreventBack";
 
 const { width } = Dimensions.get('window');
 
 const PersonalQuestion = () => {
+  usePreventBack(); // **Added Hook Call**
   const [question, setQuestion] = useState('');
   const [subjectAnswer, setSubjectAnswer] = useState('');
   const [guesserGuess, setGuesserGuess] = useState('');

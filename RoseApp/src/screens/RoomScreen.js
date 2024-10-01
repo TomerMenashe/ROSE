@@ -7,10 +7,12 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { generatePhotoEscapeData } from '../games/photoEscape/PhotoEscapeGeneratingFunctions';
 import { generateFaceSwaps } from '../games/memoryGame/MemoryGameFaceSwapFunctions';
+import usePreventBack from "../components/usePreventBack";
 
 const { height, width } = Dimensions.get('window');
 
 const RoomScreen = () => {
+  usePreventBack(); // **Added Hook Call**
   const [participants, setParticipants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [countdown, setCountdown] = useState(null); // New state for countdown

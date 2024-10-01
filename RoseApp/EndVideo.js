@@ -16,8 +16,10 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as MediaLibrary from 'expo-media-library';
+import usePreventBack from "./src/components/usePreventBack";
 
 const EndVideo = () => {
+    usePreventBack(); // **Added Hook Call**
     const navigation = useNavigation();
     const route = useRoute();
     const { pin } = route.params || {};

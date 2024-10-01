@@ -5,8 +5,10 @@ import { Alert, ActivityIndicator, View, Text } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { GAME_FLOW } from '../gameFlow';
 import { firebase } from '../firebase/firebase';
+import usePreventBack from "../components/usePreventBack";
 
 const GameController = () => {
+  usePreventBack(); // **Added Hook Call**
   const navigation = useNavigation();
   const route = useRoute();
 

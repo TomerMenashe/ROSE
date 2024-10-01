@@ -4,9 +4,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { fetchLimerick, fetchItem } from './PhotoEscapeGeneratingFunctions';
-import { firebase } from '../../firebase/firebase'; // Import Firebase
+import { firebase } from '../../firebase/firebase';
+import usePreventBack from "../../components/usePreventBack"; // Import Firebase
 
 const PhotoEscapeLoadingScreen = () => {
+    usePreventBack(); // **Added Hook Call**
     const navigation = useNavigation();
     const route = useRoute();
     const { pin, name, selfieURL } = route.params || {};

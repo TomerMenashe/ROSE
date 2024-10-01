@@ -9,8 +9,10 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
+import usePreventBack from "../components/usePreventBack";
 
 const SplashScreen = ({ navigation }) => {
+  usePreventBack(); // **Added Hook Call**
   // Initialize shared values for each letter's opacity and scale
   const fadeR = useSharedValue(0);
   const scaleR = useSharedValue(0.5);

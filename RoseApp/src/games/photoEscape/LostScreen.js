@@ -3,8 +3,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import usePreventBack from "../../components/usePreventBack";
 
 const LostScreen = () => {
+    usePreventBack(); // **Added Hook Call**
     const navigation = useNavigation();
     const route = useRoute();
     const { name, selfieURL } = route.params;

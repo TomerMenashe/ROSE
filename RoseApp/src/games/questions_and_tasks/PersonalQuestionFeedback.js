@@ -2,11 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { firebase } from '../../firebase/firebase'; // **Added Import**
+import { firebase } from '../../firebase/firebase';
+import usePreventBack from "../../components/usePreventBack"; // **Added Import**
 
 const { width } = Dimensions.get('window');
 
 const PersonalQuestionFeedback = () => {
+  usePreventBack(); // **Added Hook Call**
   const navigation = useNavigation();
   const route = useRoute();
   const {

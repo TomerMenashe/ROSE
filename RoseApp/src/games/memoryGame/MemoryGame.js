@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { firebase } from '../../firebase/firebase';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import usePreventBack from "../../components/usePreventBack";
 
 // Get the screen width
 const { width } = Dimensions.get('window');
 
 const MemoryGame = () => {
+    usePreventBack(); // **Added Hook Call**
     const navigation = useNavigation();
     const route = useRoute()
     const { pin, name, selfieURL } = route.params || {};

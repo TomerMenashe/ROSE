@@ -10,11 +10,13 @@ import Animated, {
 import * as Font from 'expo-font';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RFPercentage } from "react-native-responsive-fontsize";
-import CustomButton from "../../assets/Sounds/CustomButton"; // For responsive font sizes
+import CustomButton from "../components/CustomButton";
+import usePreventBack from "../components/usePreventBack"; // For responsive font sizes
 
 const { width, height } = Dimensions.get('window');
 
 const AboutScreen = ({ navigation }) => {
+  usePreventBack(); // **Added Hook Call**
   const [fontLoaded, setFontLoaded] = useState(false);
 
   const phrases = [

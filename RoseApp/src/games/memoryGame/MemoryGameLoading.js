@@ -4,8 +4,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Image } from 'react-native';
 import { firebase } from '../../firebase/firebase'; // Adjust the path as necessary
 import { useNavigation, useRoute } from '@react-navigation/native';
+import usePreventBack from "../../components/usePreventBack";
 
 const MemoryGameLoading = () => {
+    usePreventBack(); // **Added Hook Call**
     const navigation = useNavigation();
     const route = useRoute();
     const { pin, name, selfieURL } = route.params || {};
