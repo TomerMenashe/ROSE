@@ -32,3 +32,5 @@ lerna-debug.log*
 *.jks
 *.key
 
+# sensitive files
+app.json
