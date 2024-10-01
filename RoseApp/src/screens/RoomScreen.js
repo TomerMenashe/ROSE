@@ -10,30 +10,28 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  TouchableOpacity
+  TouchableOpacity,
 } from 'react-native';
 import { firebase } from '../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { generatePhotoEscapeData } from '../games/photoEscape/PhotoEscapeGeneratingFunctions';
-import { generateFaceSwaps } from '../games/memoryGame/MemoryGameFaceSwapFunctions';
-import usePreventBack from "../components/usePreventBack";
+import usePreventBack from '../components/usePreventBack';
 
 const { height, width } = Dimensions.get('window');
 
 const RoomScreen = () => {
-  usePreventBack(); // **Added Hook Call**
+  usePreventBack();
   const [participants, setParticipants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [countdown, setCountdown] = useState(null); // New state for countdown
+  const [countdown, setCountdown] = useState(null);
   const route = useRoute();
   const navigation = useNavigation();
-  const { pin, name, selfieURL } = route.params || {}; // Get the pin, name, and selfieURL from route params
+  const { pin, name, selfieURL } = route.params || {};
 
   // Initialize Firebase functions
   const functions = getFunctions(firebase.app(), 'europe-west1');
 
-  // Use a ref to persist the alreadyGenerated flag
   const alreadyGeneratedItemRef = useRef(false);
   const faceSwapCallRef = useRef(false);
   const roomCreator = useRef(false);
@@ -69,7 +67,8 @@ const RoomScreen = () => {
           }
 
           // Set 'gameStarted' to true in Firebase
-          roomRef.update({ gameStarted: true })
+          roomRef
+              .update({ gameStarted: true })
               .then(() => {
                 // You can handle post-update actions here if needed
               })
@@ -91,7 +90,7 @@ const RoomScreen = () => {
     return () => {
       roomRef.child('participants').off('value', participantListener);
     };
-  }, [pin, navigation, functions, name, selfieURL, countdown]);
+  }, [pin, navigation, name, selfieURL, countdown]);
 
   // Countdown effect
   useEffect(() => {
@@ -100,7 +99,32 @@ const RoomScreen = () => {
     if (countdown > 0) {
       timerId = setTimeout(() => setCountdown(countdown - 1), 1000);
     } else if (countdown === 0) {
-      // Corrected navigation call: pass parameters directly
+      if (!faceSwapCallRef.current && roomCreator.current) {
+        faceSwapCallRef.current = true;
+        console.log('RoomScreen: Starting face swaps');
+
+        // Call swapFaces cloud function
+        const swapFaces = httpsCallable(functions, 'swapFaces');
+
+        (async () => {
+          try {
+            // Fetch the participants' selfie URLs
+            const usersURLS = participants.map((participant) => participant.selfieURL);
+
+            // Call swapFaces cloud function once
+            await swapFaces({
+              user1URL: usersURLS[0],
+              user2URL: usersURLS[1],
+              pin: pin,
+            });
+
+            console.log('Face swaps initiated successfully.');
+          } catch (error) {
+            console.error('[RoomScreen] Error initiating face swaps:', error);
+          }
+        })();
+      }
+      // Navigate to GameController
       navigation.navigate('GameController', { pin, name, selfieURL });
     }
 
@@ -118,7 +142,7 @@ const RoomScreen = () => {
   // Define the leaveRoom function
   const leaveRoom = async () => {
     try {
-      await roomRef.child('LeaveRoom').set("LeaveTheRoomNow!");
+      await roomRef.child('LeaveRoom').set('LeaveTheRoomNow!');
     } catch (error) {
       console.error('[RoomScreen] Error leaving room:', error);
       Alert.alert('Error', 'Failed to leave the room.');
@@ -192,9 +216,7 @@ const RoomScreen = () => {
               style={[styles.downloadAllButton, styles.enhancedButton]}
               onPress={leaveRoom}
           >
-            <Text style={styles.buttonText}>
-              {'Leave Room'}
-            </Text>
+            <Text style={styles.buttonText}>{'Leave Room'}</Text>
           </TouchableOpacity>
         </View>
       </ImageBackground>
@@ -252,7 +274,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#FFFFFF',
   },
-  downloadAllButton: { // Added this style to prevent undefined style error
+  downloadAllButton: {
     position: 'absolute',
     top: 65,
     left: 20,
@@ -260,8 +282,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF4B4B',
     borderRadius: 5,
   },
-  enhancedButton: { // Added this style to prevent undefined style error
-    // You can add additional styling here if needed
+  enhancedButton: {
+    // Additional styling if needed
   },
   buttonText: {
     color: '#FFFFFF',
