@@ -63,12 +63,6 @@ const RoomScreen = () => {
         if (participantsList.length === 2) {
           setIsLoading(false);
 
-          if (!faceSwapCallRef.current && roomCreator.current) {
-            faceSwapCallRef.current = true;
-            console.log("RoomScreen: Called generating faceSwap");
-            generateFaceSwaps(participantsList, pin);
-          }
-
           // Set 'gameStarted' to true in Firebase
           roomRef.update({ gameStarted: true })
               .then(() => {
@@ -101,12 +95,17 @@ const RoomScreen = () => {
     if (countdown > 0) {
       timerId = setTimeout(() => setCountdown(countdown - 1), 1000);
     } else if (countdown === 0) {
+      if (!faceSwapCallRef.current && roomCreator.current) {
+        faceSwapCallRef.current = true;
+        console.log("RoomScreen: Called generating faceSwap");
+        generateFaceSwaps(participants, pin); // Changed participantsList to participants
+      }
       // Corrected navigation call: pass parameters directly
       navigation.navigate('GameController', { pin, name, selfieURL });
     }
 
     return () => clearTimeout(timerId);
-  }, [countdown, navigation, pin, name, selfieURL]);
+  }, [countdown, navigation, pin, name, selfieURL, participants]);
 
   if (!pin) {
     return (
