@@ -1,7 +1,7 @@
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-const axios = require("axios");
-const {getStorage} = require("firebase-admin/storage");
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+const axios = require('axios');
+const { getStorage } = require('firebase-admin/storage');
 const segmindApiKey = functions.config().segmind.api_key;
 const items = ["bra", "headphones", "condom", "thong", "toothbrush", "laptop", "tv remote", "tomato", "toilet brush", "bottle opener", "Boxers underpants", "ice", "glass of water"];
 const crypto = require('crypto');
@@ -70,7 +70,7 @@ async function generateResponse(model = "gpt-4o-mini", temperature = 0.7, typeOf
  * @returns {Promise<object>} - An object containing the URLs of the swapped faces.
  */
 // eslint-disable-next-line no-unused-vars
-exports.swapFaces = functions.https.onCall(async (data, _context) => {
+exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _context) => {
   const { faceImageUrl1, faceImageUrl2, pin } = data;
   let alreadyPushedUrlCount = 0;
   try {
@@ -245,11 +245,11 @@ exports.swapFaces = functions.https.onCall(async (data, _context) => {
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
-exports.getRandomItem = functions.https.onCall(async (_data, _context) => {
+exports.getRandomItem = functions.region('europe-west1').https.onCall(async (_data, _context) => {
   return items[Math.floor(Math.random() * items.length)];
 });
 
-exports.getPersonalQuestionFeedback = functions.https.onCall(async (data, _context) => {
+exports.getPersonalQuestionFeedback = functions.region('europe-west1').https.onCall(async (data, _context) => {
   try {
     const { pin, subjectName, subjectAnswer, guesserName, guesserGuess, question } = data;
 
@@ -304,7 +304,7 @@ exports.getPersonalQuestionFeedback = functions.https.onCall(async (data, _conte
   
 
 // eslint-disable-next-line no-unused-vars
-exports.isItemInImage = functions.https.onCall(async (data, _context) => {
+exports.isItemInImage = functions.region('europe-west1').https.onCall(async (data, _context) => {
   try {
     const {currentItem, image} = data;
 
@@ -332,7 +332,7 @@ exports.isItemInImage = functions.https.onCall(async (data, _context) => {
   }
 });
 
-exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
+exports.isValidSelfie = functions.region('europe-west1').https.onCall(async (data, _context) => {
   try {
     const {image} = data;
 
@@ -344,10 +344,10 @@ exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
     2. The full face should be visible in the frame.
     
     take into consideration that some phones have low quality front cameras, so the image might not be perfect.
-    If this image is a selfie that meets the conditions, respond only with the word: yes (without period or any other characters or words).
+    If this image is a good selfie, respond only with the word: yes (without period or any other characters or words).
     
     Else,
-      If this iamge is a really bad selfie or not quite a selfie, respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie.
+      respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie.
       make sure that the sarcastic comment also explains how to fix the selfie. 
       In overall, make the response funny and sarcastic, and in a length suited for a pop up message on a mobile phone.`;
 
@@ -368,7 +368,7 @@ exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
 });
 
 // eslint-disable-next-line no-unused-vars
-exports.testGenerateResponse = functions.https.onCall(async (_data, _context) => {
+exports.testGenerateResponse = functions.region('europe-west1').https.onCall(async (_data, _context) => {
   try {
     const testQuery = "'write a hard riddle where the answer is one Spider-man's villain but don't tell who .'";
     const response = await generateResponse(
@@ -395,7 +395,7 @@ exports.testGenerateResponse = functions.https.onCall(async (_data, _context) =>
  * @returns {Promise<object>} - An object containing Hamshir.
  */
 // eslint-disable-next-line no-unused-vars
-exports.getHamshir = functions.https.onCall(async (data, _context) => {
+exports.getHamshir = functions.region('europe-west1').https.onCall(async (data, _context) => {
   try {
     const {item} = data;
 
@@ -437,4 +437,3 @@ exports.getHamshir = functions.https.onCall(async (data, _context) => {
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
-

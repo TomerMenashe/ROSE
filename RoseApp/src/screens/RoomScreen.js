@@ -31,7 +31,7 @@ const RoomScreen = () => {
   const { pin, name, selfieURL } = route.params || {}; // Get the pin, name, and selfieURL from route params
 
   // Initialize Firebase functions
-  const functions = getFunctions(firebase.app(), 'us-central1');
+  const functions = getFunctions(firebase.app(), 'europe-west1');
 
   // Use a ref to persist the alreadyGenerated flag
   const alreadyGeneratedItemRef = useRef(false);

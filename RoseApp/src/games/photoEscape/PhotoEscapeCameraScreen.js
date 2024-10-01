@@ -14,11 +14,13 @@ import {
 import { Camera, useCameraPermissions, CameraView } from 'expo-camera'; // Corrected import
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import * as FileSystem from 'expo-file-system';
 import CustomButton from "../../components/CustomButton";
 
 
 const { width, height } = Dimensions.get('window');
+const functions = getFunctions(firebase.app(), 'europe-west1');
 
 const PhotoEscapeCameraScreen = () => {
     const [permission, requestPermission] = useCameraPermissions();
@@ -93,7 +95,7 @@ const PhotoEscapeCameraScreen = () => {
                 throw new Error('currentItem is undefined.');
             }
 
-            const isItemInImage = firebase.functions().httpsCallable('isItemInImage');
+            const isItemInImage = httpsCallable(functions, 'isItemInImage');
             const result = await isItemInImage({ currentItem: item, image: base64Image });
             const { isPresent } = result.data;
 

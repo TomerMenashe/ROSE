@@ -16,6 +16,9 @@ import { firebase } from '../firebase/firebase';
 import * as FileSystem from 'expo-file-system';
 import CustomButton from "../components/CustomButton"; // Import FileSystem for base64 conversion
 
+// **Import getFunctions and httpsCallable from Firebase Functions SDK**
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
 const { width, height } = Dimensions.get('window');
 
 const SelfieScreen = () => {
@@ -57,8 +60,10 @@ const SelfieScreen = () => {
             // Convert photo URI to base64
             const base64Image = await FileSystem.readAsStringAsync(photo, { encoding: 'base64' });
 
-            // Call the isValidSelfie backend function
-            const isValidSelfie = firebase.functions().httpsCallable('isValidSelfie');
+            // **Initialize Functions with europe-west1 region**
+            const functions = getFunctions(firebase.app(), 'europe-west1');
+            const isValidSelfie = httpsCallable(functions, 'isValidSelfie');
+
             const result = await isValidSelfie({ image: base64Image });
             const { response } = result.data;
 

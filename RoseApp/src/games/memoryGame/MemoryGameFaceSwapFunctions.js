@@ -2,7 +2,7 @@ import { firebase } from '../../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // Initialize Firebase functions
-const functions = getFunctions(firebase.app(), 'us-central1');
+const functions = getFunctions(firebase.app(), 'europe-west1');
 
 export async function generateFaceSwaps( participantsList, pin) {
 // Call the swapFaces function when the second player joins

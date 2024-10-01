@@ -5,10 +5,12 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ActivityInd
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing } from 'react-native-reanimated';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import * as FileSystem from 'expo-file-system';
 import usePreventBack from "../../components/usePreventBack";
 
 const { width } = Dimensions.get('window');
+const functions = getFunctions(firebase.app(), 'europe-west1');
 
 const PersonalQuestion = () => {
   usePreventBack(); // **Added Hook Call**
@@ -226,7 +228,7 @@ const PersonalQuestion = () => {
             navigateToFeedback(existingFeedback, data);
           } else {
             // Feedback doesn't exist, call backend to generate it
-            const getPersonalQuestionFeedback = firebase.functions().httpsCallable('getPersonalQuestionFeedback');
+            const getPersonalQuestionFeedback = httpsCallable(functions, 'getPersonalQuestionFeedback');
 
             const response = await getPersonalQuestionFeedback({
               pin, // Include pin
