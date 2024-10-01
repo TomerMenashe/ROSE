@@ -115,14 +115,16 @@ const PhotoEscapeLimerickScreen = () => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Riddle Me This!</Text>
+            <Text style={styles.title}>Photo Escape</Text>
 
             {showInstructions ? (
                 <Animated.View style={{ opacity: fadeAnim }}>
                     <Text style={styles.instructionsText}>
-                        Welcome to Photo Escape! The game where you race to capture a selfie with
-                        the correct item based on the limerick provided. Press "Ready" when you're
-                        set to start the game. May the fastest photographer win!
+                        Welcome to Photo Escape! 
+                        Both of you love birds will recive the same riddle.
+                        The answer is an item in your home.
+                        First one to take a selfie with the correct item - wins!
+                        Think fast, act faster - let the hunt begin!
                     </Text>
                 </Animated.View>
             ) : (
@@ -148,7 +150,7 @@ const PhotoEscapeLimerickScreen = () => {
                     onPress={showInstructions ? handleReady : handleStart}
                 >
                     <Text style={styles.buttonText}>
-                        {showInstructions ? 'Ready' : 'Start Game'}
+                        {showInstructions ? 'Ready' : 'Capture Selfie'}
                     </Text>
                 </TouchableOpacity>
             )}

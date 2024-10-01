@@ -278,7 +278,7 @@ exports.getPersonalQuestionFeedback = functions.region('europe-west1').https.onC
         that confirms that they know each other quite well and they should be proud of themselves.
         if the answers are not similar to each other or not logically connected, write back a sarcastic response,
         and tell them that they should try to know each other better.
-        what ever the case, make your comment length suited for a pop up message on a mobile phone.
+        what ever the case, make your comment length suited for a pop up message on a mobile phone, and use common english words that can be understood by a 15 year old.
         `;
 
       // Generate response using GPT
@@ -316,7 +316,7 @@ exports.isItemInImage = functions.region('europe-west1').https.onCall(async (dat
     const imgBuffer = Buffer.from(image, "base64");
 
     const response = await generateResponse(
-        "gpt-4o-mini",
+        "gpt-4o",
         0.7,
         "text",
         `Is there ${currentItem} in the image? Answer using only Yes or No.`,
@@ -414,6 +414,7 @@ exports.getHamshir = functions.region('europe-west1').https.onCall(async (data, 
         4. keep it 4 rows long.
         5. dont write back anything but the poem rhymed riddle.
         6. use simple and easy to understand language
+        7. use common english words that can be understood by a 15 year old.
 
         here is an example for the item "bra":
 
