@@ -130,7 +130,7 @@ exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _
     if (shuffledFiles.length < 8) {
       throw new Error("Not enough unique target images available.");
     }
-    const selectedImages = shuffledFiles.slice(0, 2);
+    const selectedImages = shuffledFiles.slice(0, 8);
     console.log(`Selected ${selectedImages.length} target images.`);
 
     const limit = pLimit(5); // Limit concurrency to 5
