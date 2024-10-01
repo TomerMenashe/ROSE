@@ -60,7 +60,7 @@ const MemoryGameLoading = () => {
                 });
 
                 // Check if we have at least six URLs (three pairs)
-                if (cardValues.length >= 4) {
+                if (cardValues.length >= 16) {
                     try {
                         // Shuffle the card values
                         shuffleArray(cardValues);
