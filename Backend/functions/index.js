@@ -274,15 +274,16 @@ exports.getPersonalQuestionFeedback = functions.https.onCall(async (data, _conte
       const prompt = `We play a couples game, and we asked both ${subjectName} and ${guesserName} this question: ${question}.
         ${subjectName} answered: ${subjectAnswer},
         ${guesserName} guessed: ${guesserGuess},
-        if the answers are similar to each other or logically connected, write back a positive and happy and only a little bit sarcastic response,
+        if the answers are similar to each other or logically connected, write back a happy, positive and a bit sarcastic response,
         that confirms that they know each other quite well and they should be proud of themselves.
-        if the answers are not similar to each other or not logically connected, write back a response that is a little bit sarcastic,
+        if the answers are not similar to each other or not logically connected, write back a sarcastic response,
         and tell them that they should try to know each other better.
+        what ever the case, make your comment length suited for a pop up message on a mobile phone.
         `;
 
       // Generate response using GPT
       const gptResponse = await generateResponse(
-        "gpt-4o",
+        "gpt-4o-mini",
         0.7,
         "text",
         prompt,
@@ -338,9 +339,19 @@ exports.isValidSelfie = functions.https.onCall(async (data, _context) => {
     if (!image) {
       throw new functions.https.HttpsError("invalid-argument", "Image is required.");
     }
-    const prompt = `If this image is a selfie where you can see my face clearly, respond only with the word: yes (without period or any other characters or words),
-    if not, respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie. 
-    make it funny and sarcastic, and in a length suited for a pop up message on a mobile phone.`;
+    const prompt = `Please analyze this image and ensure the following conditions are met:
+    1. This is a selfie image.
+    2. The face should be clearly visible, in focus, and not blurry.
+    3. The face should be centered in the frame, occupying a significant portion of the image.
+    4. The subjects face should be upright, not tilted at extreme angles.
+    5. No large obstructions (e.g., sunglasses, hats) should cover key facial features such as the eyes, nose, and mouth.
+    
+    If this image is a selfie that meets the conditions, respond only with the word: yes (without period or any other characters or words).
+    
+    Else,
+      If this image is a selfie that is close but not good enough, respond with a SARCASTIC comment that also explain what is needed to be done to take the selfie correctly.
+      If this iamge is a really bad selfie or not quite a selfie, respond only with a SARCASTIC comment that is based on the recived image and explains why it is not a selfie. 
+      In overall, make the response funny and sarcastic, and in a length suited for a pop up message on a mobile phone.`;
 
     const imgBuffer = Buffer.from(image, "base64");
     const response = await generateResponse(
