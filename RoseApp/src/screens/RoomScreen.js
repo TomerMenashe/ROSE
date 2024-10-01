@@ -253,10 +253,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   downloadAllButton: { // Added this style to prevent undefined style error
+    position: 'absolute',
+    top: 65,
+    left: 20,
     padding: 10,
     backgroundColor: '#FF4B4B',
     borderRadius: 5,
-    marginTop: 30,
   },
   enhancedButton: { // Added this style to prevent undefined style error
     // You can add additional styling here if needed
