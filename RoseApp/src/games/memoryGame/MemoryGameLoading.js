@@ -59,7 +59,7 @@ const MemoryGameLoading = () => {
                     }
                 });
 
-                // Check if we have at least 16 URLs (eight pairs)
+                // Check if we have at least sixteen URLs (eight pairs)
                 if (cardValues.length >= 16) {
                     try {
                         // Shuffle the card values
@@ -98,6 +98,8 @@ const MemoryGameLoading = () => {
                         console.error('Error setting up game:', error);
                         // Do not set any error state or show alerts; keep loading
                     }
+                } else {
+                    console.warn('Not enough card values to start the game.');
                 }
             }
             // If faceSwapsData is null or insufficient, do nothing and keep loading

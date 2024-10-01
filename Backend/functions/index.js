@@ -1,12 +1,29 @@
+// index.js
+
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const axios = require('axios');
 const { getStorage } = require('firebase-admin/storage');
 const segmindApiKey = functions.config().segmind.api_key;
-const items = ["bra", "headphones", "condom", "thong", "toothbrush", "laptop", "tv remote", "tomato", "toilet brush", "bottle opener", "Boxers underpants", "ice", "glass of water"];
+const items = [
+  "bra",
+  "headphones",
+  "condom",
+  "thong",
+  "toothbrush",
+  "laptop",
+  "tv remote",
+  "tomato",
+  "toilet brush",
+  "bottle opener",
+  "Boxers underpants",
+  "ice",
+  "glass of water",
+];
 const crypto = require('crypto');
 const { URL } = require('url');
 const pLimit = require('p-limit');
+
 // Initialize Firebase Admin SDK
 admin.initializeApp();
 
@@ -17,290 +34,291 @@ admin.initializeApp();
  * @return {string} - The Base64 encoded string of the image.
  */
 function encodeImage(imageBuffer) {
-  return imageBuffer.toString("base64");
+  return imageBuffer.toString('base64');
 }
 
 /**
  * Generates a response from the OpenAI GPT-4 model.
+ *
+ * @param {string} model - The model to use.
+ * @param {number} temperature - The temperature setting for the model.
+ * @param {string} typeOfResponse - The type of response ("text" or "image").
+ * @param {string} query - The text query for the model.
+ * @param {Buffer} imgBuffer - The image buffer if needed.
+ * @param {number} maxTokens - The maximum number of tokens.
+ * @return {Promise<string>} - The response from the model.
  */
-async function generateResponse(model = "gpt-4o-mini", temperature = 0.7, typeOfResponse = "text", query = null, imgBuffer = null, maxTokens = 100) {
+async function generateResponse(
+    model = 'gpt-4o-mini',
+    temperature = 0.7,
+    typeOfResponse = 'text',
+    query = null,
+    imgBuffer = null,
+    maxTokens = 100
+) {
   const headers = {
-    "Content-Type": "application/json",
-    "Authorization": `Bearer ${functions.config().openai.key}`,
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${functions.config().openai.key}`,
   };
 
-  const content = [
-    {type: typeOfResponse, text: query},
-  ];
+  const content = [{ type: typeOfResponse, text: query }];
 
   if (imgBuffer) {
     const encodedImage = encodeImage(imgBuffer);
     content.push({
-      type: "image_url",
-      image_url: {url: `data:image/jpeg;base64,${encodedImage}`},
+      type: 'image_url',
+      image_url: { url: `data:image/jpeg;base64,${encodedImage}` },
     });
   }
 
   const payload = {
     model: model,
     temperature: temperature,
-    messages: [
-      {role: "user", content: content},
-    ],
+    messages: [{ role: 'user', content: content }],
     max_tokens: maxTokens,
   };
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
+  const response = await axios.post('https://api.openai.com/v1/chat/completions', payload, {
     headers: headers,
-    body: JSON.stringify(payload),
   });
 
-  const data = await response.json();
+  const data = response.data;
   if (data.choices && data.choices.length > 0) {
     return data.choices[0].message.content;
   } else {
-    throw new Error("Invalid response from OpenAI API");
+    throw new Error('Invalid response from OpenAI API');
   }
 }
 
 /**
- * Callable function to perform a face swap using images stored in Firebase Storage.
+ * Callable function to perform multiple face swaps using images stored in Firebase Storage.
  *
- * @returns {Promise<object>} - An object containing the URLs of the swapped faces.
+ * @param {object} data - The data containing user1URL, user2URL, and pin.
+ * @returns {Promise<object>} - An object indicating the success of the operation.
  */
-// eslint-disable-next-line no-unused-vars
-exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _context) => {  const { faceImageUrl1, faceImageUrl2, pin } = data;
-  let alreadyPushedUrlCount = 0;
-  try {
-    console.log(`Starting swapFaces for pin: ${pin}`);
+exports.swapFaces = functions
+    .region('europe-west1')
+    .runWith({ timeoutSeconds: 540, memory: '2GB' })
+    .https.onCall(async (data, _context) => {
+      const { user1URL, user2URL, pin } = data;
 
-    const storage = getStorage();
-    const database = admin.database();
-
-    // Fetch existing url1 entries to prevent duplicates
-    const existingFaceSwapsSnapshot = await database.ref(`room/${pin}/faceSwaps`).once('value');
-    const existingFaceSwaps = existingFaceSwapsSnapshot.val() || {};
-    const existingUrl1Set = new Set();
-
-    Object.values(existingFaceSwaps).forEach(swap => {
-      if (swap.url1 && Array.isArray(swap.url1) && swap.url1.length > 0) {
-        const signedUrl = swap.url1[0];
-        const urlObj = new URL(signedUrl);
-        const pathname = urlObj.pathname; // /bucket-name/file-path
-        const pathParts = pathname.split('/');
-        const filePath = pathParts.slice(2).join('/'); // Remove leading '/' and bucket name
-        existingUrl1Set.add(filePath);
-      }
-    });
-    console.log(`Fetched ${existingUrl1Set.size} existing file paths.`);
-
-    // Fetch the images from the provided URLs
-    console.log("Fetching source images...");
-    const [sourceImage1Response, sourceImage2Response] = await Promise.all([
-      axios.get(faceImageUrl1, { responseType: "arraybuffer" }),
-      axios.get(faceImageUrl2, { responseType: "arraybuffer" })
-    ]);
-
-    // Convert images to base64
-    const sourceImage1 = encodeImage(sourceImage1Response.data);
-    const sourceImage2 = encodeImage(sourceImage2Response.data);
-    console.log("Source images encoded.");
-
-    // Get list of target images from 'FaceSwapTargets' folder in Firebase Storage
-    const bucket = storage.bucket();
-    const [allFiles] = await bucket.getFiles({ prefix: "FaceSwapTargets/" });
-
-    if (allFiles.length < 8) {
-      throw new Error("Not enough target images available.");
-    }
-
-    // Function to shuffle array using Fisher-Yates
-    function fisherYatesShuffle(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
-
-    // Shuffle and select 8 unique target images
-    const shuffledFiles = fisherYatesShuffle(allFiles.filter(file => !existingUrl1Set.has(`FaceSwapTargets/${file.name}`)));
-    if (shuffledFiles.length < 8) {
-      throw new Error("Not enough unique target images available.");
-    }
-    const selectedImages = shuffledFiles.slice(0, 8);
-    console.log(`Selected ${selectedImages.length} target images.`);
-
-    const limit = pLimit(5); // Limit concurrency to 5
-    const results = [];
-
-    // Process face swaps in parallel with limited concurrency
-    const swapPromises = selectedImages.map((file, index) => limit(async () => {
       try {
-        console.log(`Processing face swap ${index + 1} of ${selectedImages.length} for file ${file.name}...`);
-        const targetImageBuffer = await file.download();
-        const targetImage = encodeImage(targetImageBuffer[0]);
-        console.log(`Target image ${index + 1} downloaded and encoded.`);
+        console.log(`Starting swapFaces for pin: ${pin}`);
 
-        // Prepare payloads for the API call
-        const data1 = {
-          source_img: sourceImage1,
-          target_img: targetImage,
-          input_faces_index: 0,
-          source_faces_index: 0,
-          face_restore: "codeformer-v0.1.0.pth",
-          base64: true,
-        };
-        const data2 = {
-          source_img: sourceImage2,
-          target_img: targetImage,
-          input_faces_index: 0,
-          source_faces_index: 0,
-          face_restore: "codeformer-v0.1.0.pth",
-          base64: true,
-        };
+        const storage = getStorage();
+        const database = admin.database();
 
-        // API calls
-        console.log(`Calling MemoryGame API for target image ${file.name}...`);
-        if(alreadyPushedUrlCount >= 16)
-          return;
-        const [response1, response2] = await Promise.all([
-          axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": segmindApiKey } }),
-          axios.post("https://api.segmind.com/v1/faceswap-v2", data2, { headers: { "x-api-key": segmindApiKey } }),
-        ]);
+        /**
+         * Fetches and encodes an image from a given URL.
+         *
+         * @param {string} url - The URL of the image.
+         * @returns {Promise<string>} - A promise that resolves to the Base64 encoded image.
+         */
+        async function fetchAndEncodeImage(url) {
+          console.log(`Fetching image from URL: ${url}`);
+          const response = await axios.get(url, { responseType: 'arraybuffer' });
+          console.log(`Image fetched and encoded from URL: ${url}`);
+          return encodeImage(response.data);
+        }
 
-        if (response1.data.image && response2.data.image) {
-          const buffer1 = Buffer.from(response1.data.image, "base64");
-          const buffer2 = Buffer.from(response2.data.image, "base64");
+        /**
+         * Retrieves the list of target images from Firebase Storage.
+         *
+         * @returns {Promise<object[]>} - A promise that resolves to an array of target image files.
+         */
+        async function getTargetImages() {
+          const bucket = storage.bucket();
+          const [allFiles] = await bucket.getFiles({ prefix: 'FaceSwapTargets/' });
+          console.log(`Number of files retrieved from 'FaceSwapTargets/': ${allFiles.length}`);
+          allFiles.forEach((file, idx) => console.log(`File ${idx}: ${file.name}`));
 
-          // Generate deterministic filenames
-          const targetImageName = file.name;
-          const uniqueId1 = crypto.createHash('md5').update(faceImageUrl1 + targetImageName).digest('hex');
-          const uniqueId2 = crypto.createHash('md5').update(faceImageUrl2 + targetImageName).digest('hex');
-
-          const filePath1 = `room/${pin}/faceSwaps/${uniqueId1}_1.jpg`;
-          const filePath2 = `room/${pin}/faceSwaps/${uniqueId2}_2.jpg`;
-
-          // Check if filePath1 already exists
-          if (existingUrl1Set.has(filePath1)) {
-            console.log(`File path ${filePath1} already exists. Skipping push for this pair.`);
-            return null; // Skip this pair
+          if (allFiles.length === 0) {
+            throw new Error("No target images available in 'FaceSwapTargets/' directory.");
           }
 
-          const file1 = bucket.file(filePath1);
-          const file2 = bucket.file(filePath2);
+          // Filter out directories (if any)
+          const imageFiles = allFiles.filter((file) => !file.name.endsWith('/'));
 
-          console.log(`Saving swapped images to storage: ${filePath1}, ${filePath2}`);
-          await Promise.all([
-            file1.save(buffer1, { contentType: "image/jpeg" }),
-            file2.save(buffer2, { contentType: "image/jpeg" }),
-          ]);
+          // Sort files to ensure consistent ordering
+          imageFiles.sort((a, b) => a.name.localeCompare(b.name));
+          return imageFiles;
+        }
 
-          const [downloadURL1, downloadURL2] = await Promise.all([
-            file1.getSignedUrl({ action: "read", expires: "03-01-2500" }),
-            file2.getSignedUrl({ action: "read", expires: "03-01-2500" }),
-          ]);
+        /**
+         * Calls the face swap API with the given source and target images.
+         *
+         * @param {string} sourceImage - The Base64 encoded source image.
+         * @param {string} targetImage - The Base64 encoded target image.
+         * @returns {Promise<string>} - A promise that resolves to the Base64 encoded swapped image.
+         */
+        async function callFaceSwapAPI(sourceImage, targetImage) {
+          const data = {
+            source_img: sourceImage,
+            target_img: targetImage,
+            input_faces_index: 0,
+            source_faces_index: 0,
+            face_restore: 'codeformer-v0.1.0.pth',
+            base64: true,
+          };
+          const response = await axios.post('https://api.segmind.com/v1/faceswap-v2', data, {
+            headers: { 'x-api-key': segmindApiKey },
+          });
+          if (response.data.image) {
+            return response.data.image;
+          } else {
+            throw new Error('Face swap API did not return an image.');
+          }
+        }
 
-          const finalURL1 = downloadURL1[0];
-          const finalURL2 = downloadURL2[0];
+        /**
+         * Saves an image buffer to Firebase Storage and returns its signed URL.
+         *
+         * @param {Buffer} buffer - The image buffer.
+         * @param {string} filePath - The storage path where the image will be saved.
+         * @returns {Promise<string>} - A promise that resolves to the signed URL of the saved image.
+         */
+        async function saveImageToStorage(buffer, filePath) {
+          const bucket = storage.bucket();
+          const file = bucket.file(filePath);
+          await file.save(buffer, { contentType: 'image/jpeg' });
+          const [downloadURL] = await file.getSignedUrl({ action: 'read', expires: '03-01-2500' });
+          return downloadURL;
+        }
 
-          // Use push() to add entries
-          if (alreadyPushedUrlCount >= 16)
-            return;
+        /**
+         * Updates the Firebase Realtime Database with the new face swap URLs.
+         *
+         * @param {string} finalURL1 - The URL of the first swapped image.
+         * @param {string} finalURL2 - The URL of the second swapped image.
+         */
+        async function updateDatabase(finalURL1, finalURL2) {
           const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
           await faceSwapRef.set({
             url1: [finalURL1], // Store as an array
             url2: [finalURL2], // Store as an array
-          })
-          alreadyPushedUrlCount += 2;
-          console.log(`FaceSwap entry ${index + 1} saved to database.`);
-
-          // Add the new filePath1 to the Set to prevent duplicates within this run
-          existingUrl1Set.add(filePath1);
-
-          return { url1: [finalURL1], url2: [finalURL2] }; // Add results as arrays
-        } else {
-          throw new Error("MemoryGame API did not return both images.");
+          });
         }
-      } catch (iterationError) {
-        console.error(`Error processing face swap for file ${file.name}:`, iterationError);
-        throw iterationError;
+
+        /**
+         * Processes a face swap for the given index.
+         *
+         * @param {number} index - The index of the target image.
+         * @param {object[]} allFiles - The array of all target image files.
+         */
+        async function processFaceSwapAtIndex(index, allFiles) {
+          if (index < 0 || index >= allFiles.length) {
+            console.error(`Index ${index} is out of bounds for allFiles with length ${allFiles.length}`);
+            throw new Error(`Index ${index} is out of bounds for target images.`);
+          }
+
+          // Fetch target image
+          const file = allFiles[index];
+          console.log(`Processing face swap at index ${index} with file: ${file.name}`);
+          const targetImageBufferArray = await file.download();
+          const targetImageBuffer = targetImageBufferArray[0];
+          const targetImage = encodeImage(targetImageBuffer);
+          const targetImageName = file.name;
+
+          // Call face swap API for both users
+          const [swappedImage1Base64, swappedImage2Base64] = await Promise.all([
+            callFaceSwapAPI(sourceImage1, targetImage),
+            callFaceSwapAPI(sourceImage2, targetImage),
+          ]);
+
+          // Convert base64 images to buffers
+          const buffer1 = Buffer.from(swappedImage1Base64, 'base64');
+          const buffer2 = Buffer.from(swappedImage2Base64, 'base64');
+
+          // Generate unique filenames
+          const uniqueId1 = crypto.createHash('md5').update(user1URL + targetImageName + index).digest('hex');
+          const uniqueId2 = crypto.createHash('md5').update(user2URL + targetImageName + index).digest('hex');
+          const filePath1 = `room/${pin}/faceSwaps/${uniqueId1}_1.jpg`;
+          const filePath2 = `room/${pin}/faceSwaps/${uniqueId2}_2.jpg`;
+
+          // Save images to storage and get download URLs
+          console.log(`Saving swapped images for index ${index} to storage...`);
+          const [finalURL1, finalURL2] = await Promise.all([
+            saveImageToStorage(buffer1, filePath1),
+            saveImageToStorage(buffer2, filePath2),
+          ]);
+
+          // Update the database
+          console.log(`Updating database with new face swap URLs for index ${index}...`);
+          await updateDatabase(finalURL1, finalURL2);
+        }
+
+        // Main logic starts here
+        // Fetch and encode the users' images
+        console.log('Fetching and encoding source images...');
+        const [sourceImage1, sourceImage2] = await Promise.all([
+          fetchAndEncodeImage(user1URL),
+          fetchAndEncodeImage(user2URL),
+        ]);
+
+        // Get list of target images
+        const allFiles = await getTargetImages();
+
+        // Check if we have enough target images
+        const requiredSwaps = 8;
+        if (allFiles.length < requiredSwaps) {
+          throw new Error(
+              `Not enough target images. Required: ${requiredSwaps}, Available: ${allFiles.length}`
+          );
+        }
+
+        // Retrieve or generate indices
+        const indicesRef = database.ref(`room/${pin}/faceSwapIndices`);
+        let indicesSnapshot = await indicesRef.once('value');
+        let chosenIndices;
+
+        if (indicesSnapshot.exists()) {
+          chosenIndices = indicesSnapshot.val();
+          console.log(`Retrieved existing indices for pin ${pin}: ${chosenIndices}`);
+        } else {
+          // Generate random indices
+          const numFiles = allFiles.length;
+          const indicesArray = Array.from({ length: numFiles }, (_, i) => i);
+          // Shuffle indices
+          for (let i = indicesArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indicesArray[i], indicesArray[j]] = [indicesArray[j], indicesArray[i]];
+          }
+
+          chosenIndices = indicesArray.slice(0, requiredSwaps);
+          console.log(`Generated new indices for pin ${pin}: ${chosenIndices}`);
+          // Store indices in database
+          await indicesRef.set(chosenIndices);
+        }
+
+        // Limit concurrency
+        const limit = pLimit(3); // Adjust concurrency limit as needed
+
+        // Process face swaps with limited concurrency
+        await Promise.all(
+            chosenIndices.map((index) =>
+                limit(() => {
+                  return processFaceSwapAtIndex(index, allFiles).catch((error) => {
+                    console.error(`Error processing face swap at index ${index}:`, error);
+                    // Optionally handle retries or log the error
+                  });
+                })
+            )
+        );
+
+        console.log('All face swaps completed successfully.');
+        return { success: true };
+      } catch (error) {
+        console.error('swapFaces Error:', error);
+        throw new functions.https.HttpsError('internal', error.message);
       }
-    }));
+    });
 
-    const swapResults = await Promise.all(swapPromises);
-    // Filter out any null results (duplicates)
-    const successfulResults = swapResults.filter(result => result !== null);
-
-    if (successfulResults.length < 8) {
-      throw new Error(`Only ${successfulResults.length} unique face swaps were processed.`);
-    }
-
-    console.log("All face swaps processed successfully.");
-    return { results: successfulResults };
-  } catch (error) {
-    console.error("swapFaces Error:", error);
-    throw new functions.https.HttpsError("internal", error.message);
-  }
-});
+/**
+ * Callable function to get a random item.
+ */
 exports.getRandomItem = functions.region('europe-west1').https.onCall(async (_data, _context) => {
   return items[Math.floor(Math.random() * items.length)];
 });
-
-exports.getPersonalQuestionFeedback = functions.region('europe-west1').https.onCall(async (data, _context) => {
-  try {
-    const { pin, subjectName, subjectAnswer, guesserName, guesserGuess, question } = data;
-
-    if (!pin || !question || !subjectAnswer || !guesserGuess) {
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Pin, question, and both answers are required."
-      );
-    }
-
-    const feedbackRef = admin.database().ref(`room/${pin}/personalQuestion/feedback`);
-
-    // Use a transaction to ensure only one generation occurs
-    const feedbackSnapshot = await feedbackRef.once('value');
-
-    if (feedbackSnapshot.exists()) {
-      // Feedback already exists, return it
-      const existingFeedback = feedbackSnapshot.val();
-      return { response: existingFeedback };
-    } else {
-      // Feedback doesn't exist, generate it
-      const prompt = `We play a couples game, and we asked both ${subjectName} and ${guesserName} this question: ${question}.
-        ${subjectName} answered: ${subjectAnswer},
-        ${guesserName} guessed: ${guesserGuess},
-        if the answers are similar to each other or logically connected, write back a happy, positive and a bit sarcastic response,
-        that confirms that they know each other quite well and they should be proud of themselves.
-        if the answers are not similar to each other or not logically connected, write back a sarcastic response,
-        and tell them that they should try to know each other better.
-        what ever the case, make your comment length suited for a pop up message on a mobile phone, and use common english words that can be understood by a 15 year old.
-        `;
-
-      // Generate response using GPT
-      const gptResponse = await generateResponse(
-        "gpt-4o-mini",
-        0.7,
-        "text",
-        prompt,
-        null,
-        1000
-      );
-
-      // Store the generated feedback in the database
-      await feedbackRef.set(gptResponse);
-
-      return { response: gptResponse };
-    }
-  } catch (error) {
-    console.error("getPersonalQuestionFeedback Error:", error);
-    throw new functions.https.HttpsError("internal", error.message);
-  }
-});
-  
 
 // eslint-disable-next-line no-unused-vars
 exports.isItemInImage = functions.region('europe-west1').https.onCall(async (data, _context) => {
@@ -437,3 +455,66 @@ exports.getHamshir = functions.region('europe-west1').https.onCall(async (data, 
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
+
+exports.getPersonalQuestionFeedback = functions.region('europe-west1').https.onCall(async (data, _context) => {
+  try {
+    const { pin, subjectName, subjectAnswer, guesserName, guesserGuess, question } = data;
+
+    if (!pin || !question || !subjectAnswer || !guesserGuess) {
+      throw new functions.https.HttpsError(
+          "invalid-argument",
+          "Pin, question, and both answers are required."
+      );
+    }
+
+    const feedbackRef = admin.database().ref(`room/${pin}/personalQuestion/feedback`);
+
+    // Use a transaction to ensure only one generation occurs
+    const feedbackSnapshot = await feedbackRef.once('value');
+
+    if (feedbackSnapshot.exists()) {
+      // Feedback already exists, return it
+      const existingFeedback = feedbackSnapshot.val();
+      return { response: existingFeedback };
+    } else {
+      // Feedback doesn't exist, generate it
+      const prompt = `We play a couples game, and we asked both ${subjectName} and ${guesserName} this question: ${question}.
+        ${subjectName} answered: ${subjectAnswer},
+        ${guesserName} guessed: ${guesserGuess},
+        if the answers are similar to each other or logically connected, write back a happy, positive and a bit sarcastic response,
+        that confirms that they know each other quite well and they should be proud of themselves.
+        if the answers are not similar to each other or not logically connected, write back a sarcastic response,
+        and tell them that they should try to know each other better.
+        what ever the case, make your comment length suited for a pop up message on a mobile phone, and use common english words that can be understood by a 15 year old.
+        `;
+
+      // Generate response using GPT
+      const gptResponse = await generateResponse(
+          "gpt-4o-mini",
+          0.7,
+          "text",
+          prompt,
+          null,
+          1000
+      );
+
+      // Store the generated feedback in the database
+      await feedbackRef.set(gptResponse);
+
+      return { response: gptResponse };
+    }
+  } catch (error) {
+    console.error("getPersonalQuestionFeedback Error:", error);
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});
+
+exports.getRandomItem = functions.region('europe-west1').https.onCall(async (_data, _context) => {
+  return items[Math.floor(Math.random() * items.length)];
+});
+
+
+
+
+
+
