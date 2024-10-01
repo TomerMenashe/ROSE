@@ -70,8 +70,7 @@ async function generateResponse(model = "gpt-4o-mini", temperature = 0.7, typeOf
  * @returns {Promise<object>} - An object containing the URLs of the swapped faces.
  */
 // eslint-disable-next-line no-unused-vars
-exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _context) => {
-  const { faceImageUrl1, faceImageUrl2, pin } = data;
+exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _context) => {  const { faceImageUrl1, faceImageUrl2, pin } = data;
   let alreadyPushedUrlCount = 0;
   try {
     console.log(`Starting swapFaces for pin: ${pin}`);
@@ -164,7 +163,7 @@ exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _
 
         // API calls
         console.log(`Calling MemoryGame API for target image ${file.name}...`);
-        if(alreadyPushedUrlCount >= 16)
+        if(alreadyPushedUrlCount >= 8)
           return;
         const [response1, response2] = await Promise.all([
           axios.post("https://api.segmind.com/v1/faceswap-v2", data1, { headers: { "x-api-key": segmindApiKey } }),
@@ -207,7 +206,7 @@ exports.swapFaces = functions.region('europe-west1').https.onCall(async (data, _
           const finalURL2 = downloadURL2[0];
 
           // Use push() to add entries
-          if (alreadyPushedUrlCount >= 16)
+          if (alreadyPushedUrlCount >= 8)
             return;
           const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
           await faceSwapRef.set({
