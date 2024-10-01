@@ -85,14 +85,6 @@ const PhotoEscapeCameraScreen = () => {
         setLoading(true);
 
         try {
-            // Check if there's already a winner
-            const winnerSnapshot = await roomRef.child('winner').once('value');
-            if (winnerSnapshot.exists()) {
-                console.log('A winner has already been declared.');
-                setLoading(false);
-                return;
-            }
-
             // Convert photo URI to base64
             const base64Image = await FileSystem.readAsStringAsync(photo, { encoding: 'base64' });
 
@@ -113,14 +105,9 @@ const PhotoEscapeCameraScreen = () => {
                 const snapshot = await storageRef.put(blob);
                 const downloadURL = await snapshot.ref.getDownloadURL();
 
-                // Double-check if there's still no winner before setting the winner
-                const finalWinnerSnapshot = await roomRef.child('winner').once('value');
-                if (!finalWinnerSnapshot.exists()) {
-                    await roomRef.child('winner').set({ image: downloadURL, name, selfieURL });
-                    await roomRef.child('winnerPhotos').push({ image: downloadURL });
-                } else {
-                    console.log('A winner has already been declared.');
-                }
+                await roomRef.child('winner').set({ image: downloadURL, name, selfieURL });
+                await roomRef.child('winnerPhotos').push({ image: downloadURL});
+                // The listener will handle navigation
             } else {
                 setPhoto(null);
                 Alert.alert('Incorrect Item', `The item was not found. Try again!`);
