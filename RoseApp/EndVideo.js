@@ -241,23 +241,11 @@ const EndVideo = () => {
         }
     };
 
-    const endGame = async () => {
-        try {
-            // Remove any active listeners to prevent `currentGameIndex` from being recreated
-            gameRef.child(`${pin}/currentGameIndex`).off();
-            gameRef.child(`${pin}/playersInGameControl`).off();
-
-            // Remove `currentGameIndex` first
-            await gameRef.child(`${pin}/currentGameIndex`).remove();
-
-            // Then remove the entire room
-            await gameRef.child(`${pin}`).remove();
-
-            // Navigate back to the Welcome screen
-            navigation.replace('Welcome');
-        } catch (error) {
-        }
-    };
+    // **Implemented the endGame function**
+    const endGame = () => {
+        //Navigate to SplashScreen
+        navigation.replace('Splash');
+    }
 
     const watchVideoAgain = () => {
         setCurrentImageIndex(0);

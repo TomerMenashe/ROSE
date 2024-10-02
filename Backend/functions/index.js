@@ -109,12 +109,29 @@ exports.swapFaces = functions
         const database = admin.database();
 
         /**
+         * Helper function to check if participants exist
+         * @param {string} pin - The room PIN
+         */
+        async function checkParticipantsExist(pin) {
+          const participantsRef = database.ref(`room/${pin}/participants`);
+          const snapshot = await participantsRef.once('value');
+          if (!snapshot.exists()) {
+            console.warn(`Participants do not exist for pin: ${pin}. Terminating function.`);
+            throw new functions.https.HttpsError(
+                'not-found',
+                `Participants do not exist for pin: ${pin}.`
+            );
+          }
+        }
+
+        /**
          * Fetches and encodes an image from a given URL.
          *
          * @param {string} url - The URL of the image.
          * @returns {Promise<string>} - A promise that resolves to the Base64 encoded image.
          */
         async function fetchAndEncodeImage(url) {
+          await checkParticipantsExist(pin); // **Check before API call**
           console.log(`Fetching image from URL: ${url}`);
           const response = await axios.get(url, { responseType: 'arraybuffer' });
           console.log(`Image fetched and encoded from URL: ${url}`);
@@ -127,6 +144,7 @@ exports.swapFaces = functions
          * @returns {Promise<object[]>} - A promise that resolves to an array of target image files.
          */
         async function getTargetImages() {
+          await checkParticipantsExist(pin); // **Check before API call**
           const bucket = storage.bucket();
           const [allFiles] = await bucket.getFiles({ prefix: 'FaceSwapTargets/' });
           console.log(`Number of files retrieved from 'FaceSwapTargets/': ${allFiles.length}`);
@@ -152,6 +170,7 @@ exports.swapFaces = functions
          * @returns {Promise<string>} - A promise that resolves to the Base64 encoded swapped image.
          */
         async function callFaceSwapAPI(sourceImage, targetImage) {
+          await checkParticipantsExist(pin); // **Check before API call**
           const data = {
             source_img: sourceImage,
             target_img: targetImage,
@@ -178,6 +197,7 @@ exports.swapFaces = functions
          * @returns {Promise<string>} - A promise that resolves to the signed URL of the saved image.
          */
         async function saveImageToStorage(buffer, filePath) {
+          await checkParticipantsExist(pin); // **Check before API call**
           const bucket = storage.bucket();
           const file = bucket.file(filePath);
           await file.save(buffer, { contentType: 'image/jpeg' });
@@ -192,6 +212,7 @@ exports.swapFaces = functions
          * @param {string} finalURL2 - The URL of the second swapped image.
          */
         async function updateDatabase(finalURL1, finalURL2) {
+          await checkParticipantsExist(pin); // **Check before API call**
           const faceSwapRef = database.ref(`room/${pin}/faceSwaps`).push();
           await faceSwapRef.set({
             url1: [finalURL1], // Store as an array
@@ -206,6 +227,7 @@ exports.swapFaces = functions
          * @param {object[]} allFiles - The array of all target image files.
          */
         async function processFaceSwapAtIndex(index, allFiles) {
+          await checkParticipantsExist(pin); // **Check before API call**
           if (index < 0 || index >= allFiles.length) {
             console.error(`Index ${index} is out of bounds for allFiles with length ${allFiles.length}`);
             throw new Error(`Index ${index} is out of bounds for target images.`);
@@ -323,7 +345,7 @@ exports.getRandomItem = functions.region('europe-west1').https.onCall(async (_da
 // eslint-disable-next-line no-unused-vars
 exports.isItemInImage = functions.region('europe-west1').https.onCall(async (data, _context) => {
   try {
-    const {currentItem, image} = data;
+    const { currentItem, image } = data;
 
     if (!currentItem || !image) {
       throw new functions.https.HttpsError("invalid-argument", "currentItem and image are required.");
@@ -342,7 +364,7 @@ exports.isItemInImage = functions.region('europe-west1').https.onCall(async (dat
     );
 
     const isPresent = response.toLowerCase().includes("yes");
-    return {isPresent};
+    return { isPresent };
   } catch (error) {
     console.error(error);
     throw new functions.https.HttpsError("internal", error.message);
@@ -351,7 +373,7 @@ exports.isItemInImage = functions.region('europe-west1').https.onCall(async (dat
 
 exports.isValidSelfie = functions.region('europe-west1').https.onCall(async (data, _context) => {
   try {
-    const {image} = data;
+    const { image } = data;
 
     if (!image) {
       throw new functions.https.HttpsError("invalid-argument", "Image is required.");
@@ -377,7 +399,7 @@ exports.isValidSelfie = functions.region('europe-west1').https.onCall(async (dat
         imgBuffer,
         100,
     );
-    return {response};
+    return { response };
   } catch (error) {
     console.error(error);
     throw new functions.https.HttpsError("internal", error.message);
@@ -397,7 +419,7 @@ exports.testGenerateResponse = functions.region('europe-west1').https.onCall(asy
         50,
     );
 
-    return {response};
+    return { response };
   } catch (error) {
     console.error(error);
     throw new functions.https.HttpsError("internal", error.message);
@@ -414,7 +436,7 @@ exports.testGenerateResponse = functions.region('europe-west1').https.onCall(asy
 // eslint-disable-next-line no-unused-vars
 exports.getHamshir = functions.region('europe-west1').https.onCall(async (data, _context) => {
   try {
-    const {item} = data;
+    const { item } = data;
 
     if (!item) {
       throw new functions.https.HttpsError(
@@ -449,7 +471,7 @@ exports.getHamshir = functions.region('europe-west1').https.onCall(async (data, 
         150,
     );
 
-    return {response};
+    return { response };
   } catch (error) {
     console.error(error);
     throw new functions.https.HttpsError("internal", error.message);
@@ -512,9 +534,3 @@ exports.getPersonalQuestionFeedback = functions.region('europe-west1').https.onC
 exports.getRandomItem = functions.region('europe-west1').https.onCall(async (_data, _context) => {
   return items[Math.floor(Math.random() * items.length)];
 });
-
-
-
-
-
-

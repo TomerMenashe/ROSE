@@ -1,8 +1,8 @@
 // /src/screens/CreateGameScreen.js
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, ImageBackground, Dimensions } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
 import CustomButton from "../components/CustomButton";
 
@@ -18,6 +18,12 @@ const CreateGameScreen = () => {
   function generatePin() {
     return Math.floor(1000 + Math.random() * 9000).toString();
   }
+
+  useFocusEffect(
+      useCallback(() => {
+        setPin(generatePin());
+      }, [])
+  );
 
   const handleCreateGame = () => {
     if (!name || !selfieURL) {
@@ -72,17 +78,17 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 40 },
   pinText: { fontSize: 24, fontWeight: 'bold', color: '#FFFFFF', marginBottom: 20 },
   button: {
-    backgroundColor: '#FF0000', // Changed to bright red
-    paddingVertical: 15, // 2% of screen height can also be used
+    backgroundColor: '#FF0000',
+    paddingVertical: 15,
     borderRadius: 10,
     width: width * 0.8,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FF0000', // Bright red shadow
+    shadowColor: '#FF0000',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.7,
     shadowRadius: 10,
-    elevation: 5, // For Android shadow
+    elevation: 5,
   },
   buttonText: { color: '#FFFFFF', fontSize: 18, fontWeight: 'bold' },
 });
