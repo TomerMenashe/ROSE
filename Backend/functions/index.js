@@ -453,7 +453,7 @@ exports.getHamshir = functions.region('europe-west1').https.onCall(async (data, 
         4. keep it 4 rows long.
         5. dont write back anything but the poem rhymed riddle.
         6. use simple and easy to understand language
-        7. use common english words that can be understood by a 15 year old.
+        7. use common english words that can be understood by an 11 year old.
 
         here is an example for the item "bra":
 
@@ -503,11 +503,12 @@ exports.getPersonalQuestionFeedback = functions.region('europe-west1').https.onC
       const prompt = `We play a couples game, and we asked both ${subjectName} and ${guesserName} this question: ${question}.
         ${subjectName} answered: ${subjectAnswer},
         ${guesserName} guessed: ${guesserGuess},
-        if the answers are similar to each other or logically connected, write back a happy, positive and a bit sarcastic response,
-        that confirms that they know each other quite well and they should be proud of themselves.
+        if the answers are similar to each other or logically connected, write back a happy and sarcastic response,
+        that confirms that they know each other quite well.
         if the answers are not similar to each other or not logically connected, write back a sarcastic response,
-        and tell them that they should try to know each other better.
-        what ever the case, make your comment length suited for a pop up message on a mobile phone, and use common english words that can be understood by a 15 year old.
+        based on the provided answers and the question context. make fun of them.
+
+        what ever the case, make your comment length suited for a pop up message on a mobile phone, and use common english words that can be understood by a 13 year old.
         `;
 
       // Generate response using GPT
