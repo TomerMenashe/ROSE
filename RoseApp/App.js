@@ -24,8 +24,8 @@ import QuestionsAndTasksNavigator from './src/games/questions_and_tasks/Question
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
 export default function App() {
-  //This function is for being able to update the already deployed app
-  async function onFetchUpdateAsync(){
+  //This function is for being able to update the already deployed app, for now we don't want trouble so it's in comments
+  /*async function onFetchUpdateAsync(){
     try{
       const update = await Updates.checkForUpdateAsync();
 
@@ -40,7 +40,7 @@ export default function App() {
   //triggers the onFetchUpdate function
   useEffect(() => {
     onFetchUpdateAsync();
-  },[])
+  },[])*/
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
