@@ -16,6 +16,7 @@
     "cors": "^2.8.5",
     "expo": "~51.0.34",
     "expo-app-loading": "^2.1.1",
+    "expo-av": "~14.0.7",
     "expo-camera": "~15.0.16",
     "expo-constants": "^16.0.2",
     "expo-file-system": "~17.0.1",
@@ -24,6 +25,7 @@
     "expo-permissions": "^14.4.0",
     "expo-sharing": "~12.0.1",
     "expo-status-bar": "~1.12.1",
+    "expo-updates": "~0.25.26",
     "express": "^4.21.0",
     "firebase": "^10.13.2",
     "p-limit": "^6.1.0",
@@ -38,8 +40,7 @@
     "react-native-web": "~0.19.10",
     "react-native-zip-archive": "^7.0.1",
     "rn-fetch-blob": "^0.12.0",
-    "roseapp": "file:",
-    "expo-av": "~14.0.7"
+    "roseapp": "file:"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

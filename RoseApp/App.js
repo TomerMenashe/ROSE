@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import * as Font from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -23,6 +24,23 @@ import QuestionsAndTasksNavigator from './src/games/questions_and_tasks/Question
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
 export default function App() {
+  //This function is for being able to update the already deployed app
+  async function onFetchUpdateAsync(){
+    try{
+      const update = await Updates.checkForUpdateAsync();
+
+      if (update.isAvailable) {
+        await Updates.fetchUpdateAsync();
+        await Updates.reloadAsync();
+      }
+    } catch (error){
+      alert(`error fetching latest expo update ${error}`);
+    }
+  }
+  //triggers the onFetchUpdate function
+  useEffect(() => {
+    onFetchUpdateAsync();
+  },[])
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
