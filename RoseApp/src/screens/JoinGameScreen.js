@@ -40,7 +40,7 @@ const JoinGameScreen = () => {
                   selfieURL: selfieURL,
                 })
                 .then(() => {
-                  navigation.navigate('Room', { pin: gamePin, name, selfieURL });
+                  navigation.replace('Room', { pin: gamePin, name, selfieURL });
                 });
           } else {
             setError('Invalid PIN. Please try again.');

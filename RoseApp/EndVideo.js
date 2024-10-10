@@ -22,7 +22,7 @@ const EndVideo = () => {
     usePreventBack(); // **Added Hook Call**
     const navigation = useNavigation();
     const route = useRoute();
-    const { pin } = route.params || {};
+    const { pin, name } = route.params || {};
 
     const [imageUrls, setImageUrls] = useState([]);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -30,7 +30,9 @@ const EndVideo = () => {
     const [isPlaying, setIsPlaying] = useState(true);
     const [downloadAllPressed, setDownloadAllPressed] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const gameRef = firebase.database().ref(`room`);
+    const roomRef = firebase.database().ref(`room/${pin}`);
+    const usersRef = firebase.database().ref(`users`);
+
 
     useEffect(() => {
         if (!pin) {
@@ -42,7 +44,6 @@ const EndVideo = () => {
         // Fetch image URLs from Firebase
         const fetchImageUrls = async () => {
             try {
-                const roomRef = firebase.database().ref(`room/${pin}`);
                 const snapshot = await roomRef.once('value');
                 const data = snapshot.val();
 
@@ -243,8 +244,25 @@ const EndVideo = () => {
 
     // **Implemented the endGame function**
     const endGame = () => {
+        // Reference to the exitedPlayers counter
+        const exitedPlayersRef = roomRef.child('exitedPlayers');
+
+        // Perform a transaction to increment the counter atomically
+        exitedPlayersRef.transaction((currentValue) => {
+            return (currentValue || 0) + 1;
+        }, (error, committed, snapshot) => {
+            if (error) {
+                console.error('Transaction failed:', error);
+            } else if (!committed) {
+                console.log('Transaction not committed.');
+            } else {
+                console.log('exitedPlayers incremented to', snapshot.val());
+            }
+        });
+
+        usersRef.child(`${name}`).remove();
         //Navigate to SplashScreen
-        navigation.replace('Splash');
+        navigation.replace('NewGame', pin);
     }
 
     const watchVideoAgain = () => {

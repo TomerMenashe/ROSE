@@ -20,6 +20,8 @@ import GameController from "./src/screens/GameController";
 import LoveQuestion from "./src/games/questions_and_tasks/LoveQuestion";
 import MemoryGameNavigator from "./src/games/memoryGame/MemoryGameNavigator";
 import QuestionsAndTasksNavigator from './src/games/questions_and_tasks/QuestionsAndTasksNavigator';
+import newGameProcessing from "./src/screens/NewGameProcessing";
+import NewGameProcessing from "./src/screens/NewGameProcessing";
 
 const MainStack = createNativeStackNavigator();  // Main Stack for the app
 
@@ -147,6 +149,11 @@ export default function App() {
           name="QuestionsAndTasks"
           component={QuestionsAndTasksNavigator}
           options={{ headerShown: false }}
+        />
+        <MainStack.Screen
+            name="NewGame"
+            component={NewGameProcessing}
+            options={{ headerShown: false }}
         />
       </MainStack.Navigator>
     </NavigationContainer>

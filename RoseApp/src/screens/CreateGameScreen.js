@@ -46,7 +46,7 @@ const CreateGameScreen = () => {
         })
         .then(() => {
           console.log('Room created successfully in Firebase with PIN:', pin);
-          navigation.navigate('Room', { pin, name, selfieURL });
+          navigation.replace('Room', { pin, name, selfieURL });
           console.log('Navigating to RoomScreen with PIN:', pin);
         })
         .catch((error) => {

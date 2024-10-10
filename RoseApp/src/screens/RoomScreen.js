@@ -120,7 +120,7 @@ const RoomScreen = () => {
         })();
       }
       // Navigate to GameController
-      navigation.navigate('GameController', { pin, name, selfieURL });
+      navigation.replace('GameController', { pin, name, selfieURL });
     }
 
     return () => clearTimeout(timerId);
