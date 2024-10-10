@@ -1,7 +1,7 @@
 // /src/screens/NewGameProcessing.js
 
 import React, { useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert, ActivityIndicator, View, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../firebase/firebase';
 
@@ -12,15 +12,19 @@ const NewGameProcessing = () => {
 
     useEffect(() => {
         const processExit = async () => {
+            if (!pin) {
+                Alert.alert('Error', 'Missing pin information.');
+                navigation.navigate('Splash');
+                return;
+            }
 
             try {
-                //  Turn off the listener of room/${pin}/currentGameIndex
+                // 1. Turn off the listener of room/${pin}/currentGameIndex
                 const currentGameIndexRef = firebase.database().ref(`room/${pin}/currentGameIndex`);
                 currentGameIndexRef.off();
                 console.log(`Listener for room/${pin}/currentGameIndex turned off.`);
 
-
-                // Check if exitedPlayers >= 2, then remove room/${pin}
+                // 2. Check if exitedPlayers >= 2, then remove room/${pin}
                 const exitedPlayersRef = firebase.database().ref(`room/${pin}/exitedPlayers`);
                 const roomRef = firebase.database().ref(`room/${pin}`);
 
@@ -39,7 +43,7 @@ const NewGameProcessing = () => {
                 Alert.alert('Error', 'An error occurred while processing your request.');
             }
 
-            // Direct the user to 'Splash' with no params
+            // 3. Direct the user to 'Splash' with no params
             navigation.reset({
                 index: 0,
                 routes: [{ name: 'Splash' }],
@@ -49,8 +53,21 @@ const NewGameProcessing = () => {
         processExit();
     }, [navigation, pin]);
 
-    // Since this screen is purely for processing, we don't need to render anything
-    return null;
+    // Optional: Display a loading indicator while processing
+    return (
+        <View style={styles.container}>
+            <ActivityIndicator size="large" color="#FF4B4B" />
+        </View>
+    );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#101010',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+});
 
 export default NewGameProcessing;

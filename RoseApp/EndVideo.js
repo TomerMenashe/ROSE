@@ -1,4 +1,5 @@
 // /src/screens/EndVideo.js
+
 import React, { useEffect, useState } from 'react';
 import {
     View,
@@ -52,10 +53,8 @@ const EndVideo = () => {
                 const traverse = (node) => {
                     if (node === null || node === undefined) return;
                     if (typeof node === 'string' && node.startsWith('http')) {
-                        // const normalizedUrl = node.toLowerCase();
                         const normalizedUrl = node; // Use as-is if URLs are case-sensitive
                         urlSet.add(normalizedUrl);
-                        //console.log('Found URL:', normalizedUrl);
                     } else if (Array.isArray(node)) {
                         node.forEach((child) => traverse(child));
                     } else if (typeof node === 'object') {
@@ -242,7 +241,7 @@ const EndVideo = () => {
         }
     };
 
-    // **Implemented the endGame function**
+    // **Modified the endGame function to increment exitedPlayers and navigate after commit**
     const endGame = () => {
         // Reference to the exitedPlayers counter
         const exitedPlayersRef = roomRef.child('exitedPlayers');
@@ -253,16 +252,20 @@ const EndVideo = () => {
         }, (error, committed, snapshot) => {
             if (error) {
                 console.error('Transaction failed:', error);
+                Alert.alert('Error', 'Failed to update exitedPlayers.');
             } else if (!committed) {
                 console.log('Transaction not committed.');
             } else {
-                console.log('exitedPlayers incremented to', snapshot.val());
+                const updatedExitedPlayers = snapshot.val();
+                console.log('exitedPlayers incremented to', updatedExitedPlayers);
+
+                // Navigate to NewGameProcessingScreen after successful increment
+                navigation.replace('NewGame', { pin });
             }
         });
 
+        // Remove the user from the users list
         usersRef.child(`${name}`).remove();
-        //Navigate to SplashScreen
-        navigation.replace('NewGame', pin);
     }
 
     const watchVideoAgain = () => {
