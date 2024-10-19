@@ -11,13 +11,12 @@ import {
     ActivityIndicator,
     Dimensions
 } from 'react-native';
-import { Camera, useCameraPermissions, CameraView } from 'expo-camera'; // Corrected import
+import { Camera, useCameraPermissions, CameraView } from 'expo-camera';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { firebase } from '../../firebase/firebase';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import * as FileSystem from 'expo-file-system';
 import CustomButton from "../../components/CustomButton";
-
 
 const { width, height } = Dimensions.get('window');
 const functions = getFunctions(firebase.app(), 'europe-west1');
@@ -30,7 +29,7 @@ const PhotoEscapeCameraScreen = () => {
     const cameraRef = useRef(null);
     const navigation = useNavigation();
     const route = useRoute();
-    const { pin, name, item, selfieURL } = route.params || {}; // Changed from itemName to item
+    const { pin, name, item, selfieURL } = route.params || {};
     const roomRef = firebase.database().ref(`room/${pin}`);
 
     useEffect(() => {
@@ -46,7 +45,7 @@ const PhotoEscapeCameraScreen = () => {
 
                 if (winnerName === name) {
                     navigation.navigate('CongratulationsScreen', {
-                        item, // Pass itemName if needed
+                        item,
                         winnerImage,
                         name,
                         selfieURL,
@@ -54,7 +53,7 @@ const PhotoEscapeCameraScreen = () => {
                     });
                 } else {
                     navigation.navigate('LoserScreen', {
-                        item, // Pass itemName if needed
+                        item,
                         winnerImage,
                         name,
                         selfieURL,
@@ -87,6 +86,15 @@ const PhotoEscapeCameraScreen = () => {
         setLoading(true);
 
         try {
+            // **Added logic to ensure only one player can win**
+            // Check if there's already a winner
+            const winnerSnapshot = await roomRef.child('winner').once('value');
+            if (winnerSnapshot.exists()) {
+                console.log('A winner has already been declared.');
+                setLoading(false);
+                return;
+            }
+
             // Convert photo URI to base64
             const base64Image = await FileSystem.readAsStringAsync(photo, { encoding: 'base64' });
 
@@ -107,12 +115,18 @@ const PhotoEscapeCameraScreen = () => {
                 const snapshot = await storageRef.put(blob);
                 const downloadURL = await snapshot.ref.getDownloadURL();
 
-                await roomRef.child('winner').set({ image: downloadURL, name, selfieURL });
-                await roomRef.child('winnerPhotos').push({ image: downloadURL});
-                // The listener will handle navigation
+                // Double-check if there's still no winner before setting the winner
+                const finalWinnerSnapshot = await roomRef.child('winner').once('value');
+                if (!finalWinnerSnapshot.exists()) {
+                    await roomRef.child('winner').set({ image: downloadURL, name, selfieURL });
+                    await roomRef.child('winnerPhotos').push({ image: downloadURL });
+                    // The listener will handle navigation
+                } else {
+                    console.log('A winner has already been declared.');
+                }
             } else {
                 setPhoto(null);
-                Alert.alert('Incorrect Item', `The item was not found. Try again!`);
+                Alert.alert('Incorrect Item', 'The item was not found. Try again!');
             }
         } catch (error) {
             console.error('Error validating or submitting photo:', error);
@@ -185,6 +199,7 @@ const PhotoEscapeCameraScreen = () => {
         </View>
     );
 };
+
 
 const styles = StyleSheet.create({
     container: {
